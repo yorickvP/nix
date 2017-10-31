@@ -469,7 +469,6 @@ private:
     Path fnUserLock;
     AutoCloseFD fdUserLock;
 
-    string user;
     uid_t uid;
     gid_t gid;
     std::vector<gid_t> supplementaryGIDs;
@@ -480,9 +479,9 @@ public:
 
     void kill();
 
-    string getUser() { return user; }
     uid_t getUID() { assert(uid); return uid; }
-    uid_t getGID() { assert(gid); return gid; }
+    gid_t getGID() { assert(gid); return gid; }
+    uint32_t getIDCount() { return 1; }
     std::vector<gid_t> getSupplementaryGIDs() { return supplementaryGIDs; }
 
     bool enabled() { return uid != 0; }
@@ -495,6 +494,7 @@ Sync<PathSet> UserLock::lockedPaths_;
 
 UserLock::UserLock()
 {
+#if 0
     assert(settings.buildUsersGroup != "");
 
     /* Get the members of the build-users-group. */
@@ -577,6 +577,51 @@ UserLock::UserLock()
     throw Error(format("all build users are currently in use; "
         "consider creating additional users and adding them to the '%1%' group")
         % settings.buildUsersGroup);
+#endif
+
+    assert(settings.startId > 0);
+    assert(settings.startId % settings.idsPerBuild == 0);
+    assert(settings.uidCount % settings.idsPerBuild == 0);
+    assert((uint64_t) settings.startId + (uint64_t) settings.uidCount <= std::numeric_limits<uid_t>::max());
+
+    // FIXME: check whether the id range overlaps any known users
+
+    size_t nrSlots = settings.uidCount / settings.idsPerBuild;
+
+    for (size_t i = 0; i < nrSlots; i++) {
+        debug("trying user slot '%d'", i);
+
+        createDirs(settings.nixStateDir + "/userpool");
+
+        fnUserLock = fmt("%s/userpool/slot-%d", settings.nixStateDir, i);
+
+        {
+            auto lockedPaths(lockedPaths_.lock());
+            if (lockedPaths->count(fnUserLock))
+                /* We already have a lock on this one. */
+                continue;
+            lockedPaths->insert(fnUserLock);
+        }
+
+        try {
+
+            AutoCloseFD fd = open(fnUserLock.c_str(), O_RDWR | O_CREAT | O_CLOEXEC, 0600);
+            if (!fd)
+                throw SysError(format("opening user lock '%1%'") % fnUserLock);
+
+            if (lockFile(fd.get(), ltWrite, false)) {
+                fdUserLock = std::move(fd);
+                uid = settings.startId + i * settings.idsPerBuild;
+                gid = settings.startId + i * settings.idsPerBuild;
+                return;
+            }
+
+        } catch (...) {
+            lockedPaths_.lock()->erase(fnUserLock);
+        }
+    }
+
+    throw Error("all %d build user slots are currently in use; consider increasing 'id-count'", nrSlots);
 }
 
 
@@ -590,7 +635,10 @@ UserLock::~UserLock()
 
 void UserLock::kill()
 {
+    // FIXME: use a cgroup to kill all processes in the build?
+#if 0
     killUser(uid);
+#endif
 }
 
 
@@ -1815,7 +1863,7 @@ void DerivationGoal::startBuilder()
 
     /* If `build-users-group' is not empty, then we have to build as
        one of the members of that group. */
-    if (settings.buildUsersGroup != "" && getuid() == 0) {
+    if ((settings.buildUsersGroup != "" || settings.startId.get() != 0) && getuid() == 0) {
 #if defined(__linux__) || defined(__APPLE__)
         buildUser = std::make_unique<UserLock>();
 
@@ -1953,7 +2001,7 @@ void DerivationGoal::startBuilder()
 
         printMsg(lvlChatty, format("setting up chroot environment in '%1%'") % chrootRootDir);
 
-        if (mkdir(chrootRootDir.c_str(), 0750) == -1)
+        if (mkdir(chrootRootDir.c_str(), 0755) == -1)
             throw SysError(format("cannot create '%1%'") % chrootRootDir);
 
         if (buildUser && chown(chrootRootDir.c_str(), 0, buildUser->getGID()) == -1)
@@ -2213,14 +2261,15 @@ void DerivationGoal::startBuilder()
            the calling user (if build users are disabled). */
         uid_t hostUid = buildUser ? buildUser->getUID() : getuid();
         uid_t hostGid = buildUser ? buildUser->getGID() : getgid();
+        uint32_t nrIds = settings.idsPerBuild; // FIXME
 
         writeFile("/proc/" + std::to_string(pid) + "/uid_map",
-            (format("%d %d 1") % sandboxUid % hostUid).str());
+            fmt("%d %d %d", /* sandboxUid */ 0, hostUid, nrIds));
 
-        writeFile("/proc/" + std::to_string(pid) + "/setgroups", "deny");
+        //writeFile("/proc/" + std::to_string(pid) + "/setgroups", "deny");
 
         writeFile("/proc/" + std::to_string(pid) + "/gid_map",
-            (format("%d %d 1") % sandboxGid % hostGid).str());
+            fmt("%d %d %d", /* sandboxGid */ 0, hostGid, nrIds));
 
         /* Signal the builder that we've updated its user
            namespace. */
@@ -2709,9 +2758,15 @@ void DerivationGoal::runChild()
             /* Switch to the sandbox uid/gid in the user namespace,
                which corresponds to the build user or calling user in
                the parent namespace. */
+#if 0
             if (setgid(sandboxGid) == -1)
                 throw SysError("setgid failed");
             if (setuid(sandboxUid) == -1)
+                throw SysError("setuid failed");
+#endif
+            if (setgid(0) == -1)
+                throw SysError("setgid failed");
+            if (setuid(0) == -1)
                 throw SysError("setuid failed");
 
             setUser = false;
