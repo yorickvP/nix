@@ -17,12 +17,17 @@ struct TarArchive {
             throw Error(reason, archive_error_string(this->archive));
     }
 
-    TarArchive(Source& source) : buffer(4096) {
+    TarArchive(Source& source, bool raw = false) : buffer(4096) {
         this->archive = archive_read_new();
         this->source = &source;
 
         archive_read_support_filter_all(archive);
-        archive_read_support_format_all(archive);
+        if (!raw) {
+            archive_read_support_format_all(archive);
+        } else {
+            archive_read_support_format_raw(archive);
+            archive_read_support_format_empty(archive);
+        }
         check(archive_read_open(archive, (void *)this, TarArchive::callback_open, TarArchive::callback_read, TarArchive::callback_close), "Failed to open archive (%s)");
     }
 

@@ -1,10 +1,13 @@
 #include "compression.hh"
+#include "tarfile.hh"
 #include "util.hh"
 #include "finally.hh"
 #include "logging.hh"
 
 #include <lzma.h>
 #include <bzlib.h>
+#include <archive.h>
+#include <archive_entry.h>
 #include <cstdio>
 #include <cstring>
 
@@ -32,6 +35,25 @@ struct ChunkedCompressionSink : CompressionSink
     }
 
     virtual void writeInternal(const unsigned char * data, size_t len) = 0;
+};
+
+struct ArchiveDecompressionSource : Source
+{
+    TarArchive archive;
+    bool isOpen = false;
+    ArchiveDecompressionSource(Source & src) : archive(src, true) {}
+    ~ArchiveDecompressionSource() override {}
+    size_t read(unsigned char * data, size_t len) override {
+        struct archive* a = this->archive.archive;
+        struct archive_entry* ae;
+        if (!isOpen) {
+            this->archive.check(archive_read_next_header(a, &ae));
+            isOpen = true;
+        }
+        size_t result = archive_read_data(a, data, len);
+        this->archive.check(result);
+        return result;
+    }
 };
 
 struct NoneSink : CompressionSink
