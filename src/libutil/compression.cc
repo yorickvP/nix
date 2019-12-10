@@ -51,20 +51,24 @@ struct ArchiveDecompressionSource : Source
             this->archive->check(archive_read_next_header(this->archive->archive, &ae), "Failed to read header (%s)");
             isOpen = true;
         }
-        size_t result = archive_read_data(this->archive->archive, data, len);
+        ssize_t result = archive_read_data(this->archive->archive, data, len);
         if (result > 0) return result;
         this->archive->check(result, "Failed to read compressed data (%s)");
+        return result;
     }
 };
 struct ArchiveCompressionSink : CompressionSink
 {
     Sink & nextSink;
     struct archive* archive;
-    ArchiveCompressionSink(Sink & nextSink, const char* format) : nextSink(nextSink) {
+    ArchiveCompressionSink(Sink & nextSink, std::string format, bool parallel) : nextSink(nextSink) {
         archive = archive_write_new();
         if (!archive) throw Error("failed to initialize libarchive");
-        check(archive_write_add_filter_by_name(archive, format), "Couldn't initialize compression (%s)");
+        check(archive_write_add_filter_by_name(archive, format.c_str()), "Couldn't initialize compression (%s)");
         check(archive_write_set_format_raw(archive));
+        if (format == "xz" && parallel) {
+            check(archive_write_set_filter_option(archive, format.c_str(), "threads", "0"));
+        }
         check(archive_write_set_bytes_per_block(archive, 0));
         check(archive_write_set_bytes_in_last_block(archive, 1));
         check(archive_write_open(archive, this, NULL, ArchiveCompressionSink::callback_write, NULL));
@@ -285,138 +289,6 @@ ref<CompressionSink> makeDecompressionSink(const std::string & method, Sink & ne
         throw UnknownCompressionMethod("unknown compression method '%s'", method);
 }
 
-struct XzCompressionSink : CompressionSink
-{
-    Sink & nextSink;
-    uint8_t outbuf[BUFSIZ];
-    lzma_stream strm = LZMA_STREAM_INIT;
-    bool finished = false;
-
-    XzCompressionSink(Sink & nextSink, bool parallel) : nextSink(nextSink)
-    {
-        lzma_ret ret;
-        bool done = false;
-
-        if (parallel) {
-#ifdef HAVE_LZMA_MT
-            lzma_mt mt_options = {};
-            mt_options.flags = 0;
-            mt_options.timeout = 300; // Using the same setting as the xz cmd line
-            mt_options.preset = LZMA_PRESET_DEFAULT;
-            mt_options.filters = NULL;
-            mt_options.check = LZMA_CHECK_CRC64;
-            mt_options.threads = lzma_cputhreads();
-            mt_options.block_size = 0;
-            if (mt_options.threads == 0)
-                mt_options.threads = 1;
-            // FIXME: maybe use lzma_stream_encoder_mt_memusage() to control the
-            // number of threads.
-            ret = lzma_stream_encoder_mt(&strm, &mt_options);
-            done = true;
-#else
-            printMsg(lvlError, "warning: parallel XZ compression requested but not supported, falling back to single-threaded compression");
-#endif
-        }
-
-        if (!done)
-            ret = lzma_easy_encoder(&strm, 6, LZMA_CHECK_CRC64);
-
-        if (ret != LZMA_OK)
-            throw CompressionError("unable to initialise lzma encoder");
-
-        // FIXME: apply the x86 BCJ filter?
-
-        strm.next_out = outbuf;
-        strm.avail_out = sizeof(outbuf);
-    }
-
-    ~XzCompressionSink()
-    {
-        lzma_end(&strm);
-    }
-
-    void finish() override
-    {
-        CompressionSink::flush();
-        write(nullptr, 0);
-    }
-
-    void write(const unsigned char * data, size_t len) override
-    {
-        strm.next_in = data;
-        strm.avail_in = len;
-
-        while (!finished && (!data || strm.avail_in)) {
-            checkInterrupt();
-
-            lzma_ret ret = lzma_code(&strm, data ? LZMA_RUN : LZMA_FINISH);
-            if (ret != LZMA_OK && ret != LZMA_STREAM_END)
-                throw CompressionError("error %d while compressing xz file", ret);
-
-            finished = ret == LZMA_STREAM_END;
-
-            if (strm.avail_out < sizeof(outbuf) || strm.avail_in == 0) {
-                nextSink(outbuf, sizeof(outbuf) - strm.avail_out);
-                strm.next_out = outbuf;
-                strm.avail_out = sizeof(outbuf);
-            }
-        }
-    }
-};
-
-struct BzipCompressionSink : ChunkedCompressionSink
-{
-    Sink & nextSink;
-    bz_stream strm;
-    bool finished = false;
-
-    BzipCompressionSink(Sink & nextSink) : nextSink(nextSink)
-    {
-        memset(&strm, 0, sizeof(strm));
-        int ret = BZ2_bzCompressInit(&strm, 9, 0, 30);
-        if (ret != BZ_OK)
-            throw CompressionError("unable to initialise bzip2 encoder");
-
-        strm.next_out = (char *) outbuf;
-        strm.avail_out = sizeof(outbuf);
-    }
-
-    ~BzipCompressionSink()
-    {
-        BZ2_bzCompressEnd(&strm);
-    }
-
-    void finish() override
-    {
-        flush();
-        writeInternal(nullptr, 0);
-    }
-
-    void writeInternal(const unsigned char * data, size_t len) override
-    {
-        assert(len <= std::numeric_limits<decltype(strm.avail_in)>::max());
-
-        strm.next_in = (char *) data;
-        strm.avail_in = len;
-
-        while (!finished && (!data || strm.avail_in)) {
-            checkInterrupt();
-
-            int ret = BZ2_bzCompress(&strm, data ? BZ_RUN : BZ_FINISH);
-            if (ret != BZ_RUN_OK && ret != BZ_FINISH_OK && ret != BZ_STREAM_END)
-                throw CompressionError("error %d while compressing bzip2 file", ret);
-
-            finished = ret == BZ_STREAM_END;
-
-            if (strm.avail_out < sizeof(outbuf) || strm.avail_in == 0) {
-                nextSink(outbuf, sizeof(outbuf) - strm.avail_out);
-                strm.next_out = (char *) outbuf;
-                strm.avail_out = sizeof(outbuf);
-            }
-        }
-    }
-};
-
 struct BrotliCompressionSink : ChunkedCompressionSink
 {
     Sink & nextSink;
@@ -479,14 +351,10 @@ ref<CompressionSink> makeCompressionSink(const std::string & method, Sink & next
         "bzip2", "compress", "grzip", "gzip", "lrzip", "lz4", "lzip", "lzma", "lzop", "xz", "zstd"
     };
     if (std::find(la_supports.begin(), la_supports.end(), method) != la_supports.end()) {
-        return make_ref<ArchiveCompressionSink>(nextSink, method.c_str());
+        return make_ref<ArchiveCompressionSink>(nextSink, method, parallel);
     }
     if (method == "none")
         return make_ref<NoneSink>(nextSink);
-    // else if (method == "xz")
-    //     return make_ref<XzCompressionSink>(nextSink, parallel);
-    // else if (method == "bzip2")
-    //     return make_ref<BzipCompressionSink>(nextSink);
     else if (method == "br")
         return make_ref<BrotliCompressionSink>(nextSink);
     else
