@@ -17,9 +17,9 @@ struct TarArchive {
     // disable copy constructor
     TarArchive(const TarArchive&) = delete;
 
-    void close() {};
+    void close();
 
-    ~TarArchive() {}
+    ~TarArchive();
 };
 void unpackTarfile(Source & source, const Path & destDir);
 

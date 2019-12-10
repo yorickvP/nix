@@ -106,6 +106,20 @@ std::string Source::drain()
     return s;
 }
 
+void Source::drain(Sink& s)
+{
+    std::vector<unsigned char> buf(8192);
+    while (true) {
+        size_t n;
+        try {
+            n = read(buf.data(), buf.size());
+            s(buf.data(), buf.size());
+        } catch (EndOfFile &) {
+            break;
+        }
+    }
+}
+
 
 size_t BufferedSource::read(unsigned char * data, size_t len)
 {

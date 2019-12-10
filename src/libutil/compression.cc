@@ -39,20 +39,23 @@ struct ChunkedCompressionSink : CompressionSink
 
 struct ArchiveDecompressionSource : Source
 {
-    TarArchive archive;
+    std::unique_ptr<TarArchive> archive;
+    Source & src;
     bool isOpen = false;
-    ArchiveDecompressionSource(Source & src) : archive(src, true) {}
+    ArchiveDecompressionSource(Source & src) : src(src) {
+        //archive_read_support_filter_xz(archive.archive);
+    }
     ~ArchiveDecompressionSource() override {}
     size_t read(unsigned char * data, size_t len) override {
-        struct archive* a = this->archive.archive;
         struct archive_entry* ae;
         if (!isOpen) {
-            this->archive.check(archive_read_next_header(a, &ae));
+            archive = std::make_unique<TarArchive>(src, true);
+            this->archive->check(archive_read_next_header(this->archive->archive, &ae), "Failed to read header (%s)");
             isOpen = true;
         }
-        size_t result = archive_read_data(a, data, len);
-        this->archive.check(result);
-        return result;
+        size_t result = archive_read_data(this->archive->archive, data, len);
+        if (result > 0) return result;
+        this->archive->check(result, "Failed to read compressed data (%s)");
     }
 };
 
@@ -427,6 +430,9 @@ struct BrotliCompressionSink : ChunkedCompressionSink
         }
     }
 };
+std::unique_ptr<Source> makeDecompressionSource(Source & prev) {
+    return std::unique_ptr<Source>(new ArchiveDecompressionSource(prev));
+}
 
 ref<CompressionSink> makeCompressionSink(const std::string & method, Sink & nextSink, const bool parallel)
 {

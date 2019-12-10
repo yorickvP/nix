@@ -63,6 +63,7 @@ struct Source
     virtual bool good() { return true; }
 
     std::string drain();
+    void drain(Sink& s);
 };
 
 

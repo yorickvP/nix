@@ -280,15 +280,27 @@ void BinaryCacheStore::narFromPath(const Path & storePath, Sink & sink)
         narSize += len;
     });
 
-    auto decompressor = makeDecompressionSink(info->compression, wrapperSink);
+    bool substituteGone = false;
 
+    auto source = sinkToSource([&](Sink & nextSink) {
+        try {
+            getFile(info->url, nextSink);
+        } catch (NoSuchBinaryCacheFile & e) {
+            // thread SubstituteGone through libarchive
+            substituteGone = true;
+            throw SubstituteGone(e.what());
+        }
+    });
     try {
-        getFile(info->url, *decompressor);
-    } catch (NoSuchBinaryCacheFile & e) {
-        throw SubstituteGone(e.what());
+        auto decompSrc = makeDecompressionSource(*source);
+        decompSrc->drain(wrapperSink);
+    } catch(Error& e) {
+        if (substituteGone) {
+            throw SubstituteGone(e.what());
+        } else {
+            throw e;
+        }
     }
-
-    decompressor->finish();
 
     stats.narRead++;
     //stats.narReadCompressedBytes += nar->size(); // FIXME

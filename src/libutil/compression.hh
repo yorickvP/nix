@@ -13,6 +13,8 @@ struct CompressionSink : BufferedSink
     virtual void finish() = 0;
 };
 
+std::unique_ptr<Source> makeDecompressionSource(Source & prev);
+
 ref<std::string> decompress(const std::string & method, const std::string & in);
 
 ref<CompressionSink> makeDecompressionSink(const std::string & method, Sink & nextSink);
