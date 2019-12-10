@@ -42,9 +42,7 @@ struct ArchiveDecompressionSource : Source
     std::unique_ptr<TarArchive> archive;
     Source & src;
     bool isOpen = false;
-    ArchiveDecompressionSource(Source & src) : src(src) {
-        //archive_read_support_filter_xz(archive.archive);
-    }
+    ArchiveDecompressionSource(Source & src) : src(src) {}
     ~ArchiveDecompressionSource() override {}
     size_t read(unsigned char * data, size_t len) override {
         struct archive_entry* ae;
@@ -56,6 +54,47 @@ struct ArchiveDecompressionSource : Source
         size_t result = archive_read_data(this->archive->archive, data, len);
         if (result > 0) return result;
         this->archive->check(result, "Failed to read compressed data (%s)");
+    }
+};
+struct ArchiveCompressionSink : CompressionSink
+{
+    Sink & nextSink;
+    struct archive* archive;
+    ArchiveCompressionSink(Sink & nextSink, const char* format) : nextSink(nextSink) {
+        archive = archive_write_new();
+        if (!archive) throw Error("failed to initialize libarchive");
+        check(archive_write_add_filter_by_name(archive, format), "Couldn't initialize compression (%s)");
+        check(archive_write_set_format_raw(archive));
+        check(archive_write_set_bytes_per_block(archive, 0));
+        check(archive_write_set_bytes_in_last_block(archive, 1));
+        check(archive_write_open(archive, this, NULL, ArchiveCompressionSink::callback_write, NULL));
+        struct archive_entry *ae = archive_entry_new();
+        archive_entry_set_filetype(ae, AE_IFREG);
+        check(archive_write_header(archive, ae));
+        archive_entry_free(ae);
+    }
+    ~ArchiveCompressionSink() override {
+        if (archive) archive_write_free(archive);
+    }
+    void finish() override {
+        flush();
+        check(archive_write_close(archive));
+    }
+    void check(int err, const char *reason="Failed to compress (%s)") {
+        if (err == ARCHIVE_EOF)
+            throw EndOfFile("reached end of archive");
+        else if (err != ARCHIVE_OK)
+            throw Error(reason, archive_error_string(this->archive));
+    }
+    void write(const unsigned char *data, size_t len) override {
+        ssize_t result = archive_write_data(archive, data, len);
+        if (result <= 0) check(result);
+    }
+private:
+    static ssize_t callback_write(struct archive *archive, void *_self, const void *buffer, size_t length) {
+        ArchiveCompressionSink *self = (ArchiveCompressionSink *)_self;
+        self->nextSink((const unsigned char*)buffer, length);
+        return length;
     }
 };
 
@@ -436,12 +475,18 @@ std::unique_ptr<Source> makeDecompressionSource(Source & prev) {
 
 ref<CompressionSink> makeCompressionSink(const std::string & method, Sink & nextSink, const bool parallel)
 {
+    std::vector<std::string> la_supports = {
+        "bzip2", "compress", "grzip", "gzip", "lrzip", "lz4", "lzip", "lzma", "lzop", "xz", "zstd"
+    };
+    if (std::find(la_supports.begin(), la_supports.end(), method) != la_supports.end()) {
+        return make_ref<ArchiveCompressionSink>(nextSink, method.c_str());
+    }
     if (method == "none")
         return make_ref<NoneSink>(nextSink);
-    else if (method == "xz")
-        return make_ref<XzCompressionSink>(nextSink, parallel);
-    else if (method == "bzip2")
-        return make_ref<BzipCompressionSink>(nextSink);
+    // else if (method == "xz")
+    //     return make_ref<XzCompressionSink>(nextSink, parallel);
+    // else if (method == "bzip2")
+    //     return make_ref<BzipCompressionSink>(nextSink);
     else if (method == "br")
         return make_ref<BrotliCompressionSink>(nextSink);
     else
