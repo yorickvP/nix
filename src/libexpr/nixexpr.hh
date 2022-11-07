@@ -8,7 +8,6 @@
 #include "error.hh"
 #include "chunked-vector.hh"
 
-
 namespace nix {
 
 
@@ -120,6 +119,7 @@ struct Env;
 struct Value;
 class EvalState;
 struct StaticEnv;
+class ByteCodeChunk;
 
 
 /* An attribute path is a sequence of attribute names. */
@@ -141,53 +141,65 @@ std::string showAttrPath(const SymbolTable & symbols, const AttrPath & attrPath)
 struct Expr
 {
     virtual ~Expr() { };
-    virtual void show(const SymbolTable & symbols, std::ostream & str) const;
-    virtual void bindVars(EvalState & es, const std::shared_ptr<const StaticEnv> & env);
-    virtual void eval(EvalState & state, Env & env, Value & v);
+    virtual void show(const SymbolTable & symbols, std::ostream & str) const = 0;
+    virtual void bindVars(EvalState & es, const std::shared_ptr<const StaticEnv> & env) = 0;
+    virtual void eval(EvalState & state, Env & env, Value & v) = 0;
     virtual Value * maybeThunk(EvalState & state, Env & env);
-    virtual void setName(Symbol name);
+    virtual void setName(Symbol name) {};
     virtual PosIdx getPos() const { return noPos; }
+    virtual void compile(ByteCodeChunk &) const { abort(); };
 };
 
 #define COMMON_METHODS \
     void show(const SymbolTable & symbols, std::ostream & str) const override; \
     void eval(EvalState & state, Env & env, Value & v) override; \
-    void bindVars(EvalState & es, const std::shared_ptr<const StaticEnv> & env) override;
+    void bindVars(EvalState & es, const std::shared_ptr<const StaticEnv> & env) override; \
+    void compile(ByteCodeChunk &) const override;
 
-struct ExprInt : Expr
+struct ExprLiteral : Expr
+{
+    Value v;
+    Value * maybeThunk(EvalState & state, Env & env) override;
+    void eval(EvalState & state, Env & env, Value & v) override {
+        v = this->v;
+    };
+    void bindVars(EvalState & es, const std::shared_ptr<const StaticEnv> & env) override;
+    void compile(ByteCodeChunk &) const override;
+};
+
+struct ExprInt : ExprLiteral
 {
     NixInt n;
-    Value v;
     ExprInt(NixInt n) : n(n) { v.mkInt(n); };
-    Value * maybeThunk(EvalState & state, Env & env) override;
-    COMMON_METHODS
+    void show(const SymbolTable & symbols, std::ostream & str) const override {
+        // todo: show value
+        str << n;
+    };
 };
 
-struct ExprFloat : Expr
+struct ExprFloat : ExprLiteral
 {
     NixFloat nf;
-    Value v;
     ExprFloat(NixFloat nf) : nf(nf) { v.mkFloat(nf); };
-    Value * maybeThunk(EvalState & state, Env & env) override;
-    COMMON_METHODS
+    void show(const SymbolTable & symbols, std::ostream & str) const override {
+        str << nf;
+    };
 };
 
-struct ExprString : Expr
+struct ExprString : ExprLiteral
 {
     std::string s;
-    Value v;
     ExprString(std::string s) : s(std::move(s)) { v.mkString(this->s.data()); };
-    Value * maybeThunk(EvalState & state, Env & env) override;
-    COMMON_METHODS
+    void show(const SymbolTable & symbols, std::ostream & str) const override;
 };
 
-struct ExprPath : Expr
+struct ExprPath : ExprLiteral
 {
     std::string s;
-    Value v;
     ExprPath(std::string s) : s(std::move(s)) { v.mkPath(this->s.c_str()); };
-    Value * maybeThunk(EvalState & state, Env & env) override;
-    COMMON_METHODS
+    void show(const SymbolTable & symbols, std::ostream & str) const override {
+        str << s;
+    };
 };
 
 typedef uint32_t Level;
@@ -326,7 +338,10 @@ struct ExprLambda : Expr
         : pos(pos), formals(formals), body(body)
     {
     }
-    void setName(Symbol name) override;
+    void setName(Symbol name) override {
+        this->name = name;
+        body->setName(name);
+    };
     std::string showNamePos(const EvalState & state) const;
     inline bool hasFormals() const { return formals != nullptr; }
     PosIdx getPos() const override { return pos; }
@@ -405,6 +420,7 @@ struct ExprOpNot : Expr
         } \
         void eval(EvalState & state, Env & env, Value & v) override; \
         PosIdx getPos() const override { return pos; } \
+        void compile(ByteCodeChunk &) const override;   \
     };
 
 MakeBinOp(ExprOpEq, "==")

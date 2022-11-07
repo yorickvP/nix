@@ -541,6 +541,7 @@ private:
     friend struct ExprOpUpdate;
     friend struct ExprOpConcatLists;
     friend struct ExprVar;
+    friend struct ExprLiteral;
     friend struct ExprString;
     friend struct ExprInt;
     friend struct ExprFloat;

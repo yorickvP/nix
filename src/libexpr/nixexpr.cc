@@ -49,29 +49,9 @@ std::ostream & operator <<(std::ostream & str, const SymbolStr & symbol)
     return str;
 }
 
-void Expr::show(const SymbolTable & symbols, std::ostream & str) const
-{
-    abort();
-}
-
-void ExprInt::show(const SymbolTable & symbols, std::ostream & str) const
-{
-    str << n;
-}
-
-void ExprFloat::show(const SymbolTable & symbols, std::ostream & str) const
-{
-    str << nf;
-}
-
 void ExprString::show(const SymbolTable & symbols, std::ostream & str) const
 {
     showString(str, s);
-}
-
-void ExprPath::show(const SymbolTable & symbols, std::ostream & str) const
-{
-    str << s;
 }
 
 void ExprVar::show(const SymbolTable & symbols, std::ostream & str) const
@@ -292,30 +272,7 @@ std::string showAttrPath(const SymbolTable & symbols, const AttrPath & attrPath)
 
 /* Computing levels/displacements for variables. */
 
-void Expr::bindVars(EvalState & es, const std::shared_ptr<const StaticEnv> & env)
-{
-    abort();
-}
-
-void ExprInt::bindVars(EvalState & es, const std::shared_ptr<const StaticEnv> & env)
-{
-    if (es.debugRepl)
-        es.exprEnvs.insert(std::make_pair(this, env));
-}
-
-void ExprFloat::bindVars(EvalState & es, const std::shared_ptr<const StaticEnv> & env)
-{
-    if (es.debugRepl)
-        es.exprEnvs.insert(std::make_pair(this, env));
-}
-
-void ExprString::bindVars(EvalState & es, const std::shared_ptr<const StaticEnv> & env)
-{
-    if (es.debugRepl)
-        es.exprEnvs.insert(std::make_pair(this, env));
-}
-
-void ExprPath::bindVars(EvalState & es, const std::shared_ptr<const StaticEnv> & env)
+void ExprLiteral::bindVars(EvalState & es, const std::shared_ptr<const StaticEnv> & env)
 {
     if (es.debugRepl)
         es.exprEnvs.insert(std::make_pair(this, env));
@@ -547,18 +504,6 @@ void ExprPos::bindVars(EvalState & es, const std::shared_ptr<const StaticEnv> & 
 
 
 /* Storing function names. */
-
-void Expr::setName(Symbol name)
-{
-}
-
-
-void ExprLambda::setName(Symbol name)
-{
-    this->name = name;
-    body->setName(name);
-}
-
 
 std::string ExprLambda::showNamePos(const EvalState & state) const
 {

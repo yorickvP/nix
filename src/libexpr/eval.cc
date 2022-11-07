@@ -1169,31 +1169,11 @@ Value * ExprVar::maybeThunk(EvalState & state, Env & env)
     return Expr::maybeThunk(state, env);
 }
 
-
-Value * ExprString::maybeThunk(EvalState & state, Env & env)
+Value * ExprLiteral::maybeThunk(EvalState & state, Env & env)
 {
     state.nrAvoided++;
     return &v;
 }
-
-Value * ExprInt::maybeThunk(EvalState & state, Env & env)
-{
-    state.nrAvoided++;
-    return &v;
-}
-
-Value * ExprFloat::maybeThunk(EvalState & state, Env & env)
-{
-    state.nrAvoided++;
-    return &v;
-}
-
-Value * ExprPath::maybeThunk(EvalState & state, Env & env)
-{
-    state.nrAvoided++;
-    return &v;
-}
-
 
 void EvalState::evalFile(const Path & path_, Value & v, bool mustBeTrivial)
 {
@@ -1298,35 +1278,6 @@ inline void EvalState::evalAttrs(Env & env, Expr * e, Value & v)
     e->eval(*this, env, v);
     if (v.type() != nAttrs)
         throwTypeError(noPos, "value is %1% while a set was expected", v, env, *e);
-}
-
-
-void Expr::eval(EvalState & state, Env & env, Value & v)
-{
-    abort();
-}
-
-
-void ExprInt::eval(EvalState & state, Env & env, Value & v)
-{
-    v = this->v;
-}
-
-
-void ExprFloat::eval(EvalState & state, Env & env, Value & v)
-{
-    v = this->v;
-}
-
-void ExprString::eval(EvalState & state, Env & env, Value & v)
-{
-    v = this->v;
-}
-
-
-void ExprPath::eval(EvalState & state, Env & env, Value & v)
-{
-    v = this->v;
 }
 
 

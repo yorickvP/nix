@@ -617,6 +617,29 @@ static Bindings::iterator getAttr(
     return value;
 }
 
+void decompile(SymbolTable&, ByteCodeChunk& c, uint32_t ix, std::ostream & str);
+ByteCodeChunk& newByteCode();
+static void prim_decompile(EvalState & state, const PosIdx pos, Value ** args, Value & v) {
+    state.forceValue(*args[0], pos);
+    assert(args[0]->isLambda());
+    Expr* body = args[0]->lambda.fun->body;
+    ByteCodeChunk& c = newByteCode();
+    body->compile(c);
+    std::ostringstream ss;
+    decompile(state.symbols, c, 0, ss);
+    std::string res = ss.str();
+    v.mkString(res);
+}
+
+static RegisterPrimOp primop_decompile({
+    .name = "decompile",
+    .args = {"f"},
+    .doc = R"(
+      Return decompiled output for lambda arg
+    )",
+    .fun = prim_decompile,
+});
+
 static void prim_genericClosure(EvalState & state, const PosIdx pos, Value * * args, Value & v)
 {
     state.forceAttrs(*args[0], pos);
