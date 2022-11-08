@@ -20,10 +20,11 @@ enum byteCodeT {
     bList, // uint32 length, // -n+1
     bLambda, // u32 pos, name, arg, formals, body
     bCall, // u32 pos, pop(1)(pop(nArgs))
-    bLet, // expr1, expr2 // +1
+    bLet, // -1
+    bLetEnd, // 0
     bWith, // u32 pos, u32 prevWith // -1+1
     bJmpNot, // u32 pos, expr else // -1+1
-    bAssert, // u32 pos, expr body // -1+1
+    bAssert, // u32 pos // -1+1
     bNot, // -1+1
     bOpEq, // -2+1
     bOpNEq, // -2+1
@@ -40,7 +41,6 @@ enum byteCodeT {
     bThunk, // u32 thunkNr
 };
 struct ByteCodeChunk {
-    class Iterator;
     std::vector<uint8_t> code;
     std::vector<const Value*> consts;
     std::vector<const AttrPath*> attrPaths;
@@ -76,9 +76,13 @@ struct ByteCodeChunk {
         consts.push_back(&v);
         push((uint32_t)(consts.size() - 1));
     };
-    void push(const AttrPath &p) {
+    uint32_t addConstant(const Value &v) {
+        consts.push_back(&v);
+        return consts.size() - 1;
+    };
+    uint32_t addAttrPath(const AttrPath &p) {
         attrPaths.push_back(&p);
-        push((uint32_t)(attrPaths.size() - 1));
+        return attrPaths.size() - 1;
     };
     ByteCodeChunk &pushThunk() {
         uint32_t ix = thunks.size();
@@ -98,5 +102,6 @@ struct ByteCodeChunk {
         return attrPaths[get_u32(ix)];
     };
 };
+
 }
 

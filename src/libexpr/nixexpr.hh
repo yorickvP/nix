@@ -119,7 +119,7 @@ struct Env;
 struct Value;
 class EvalState;
 struct StaticEnv;
-class ByteCodeChunk;
+class ByteCodeChunkIterator;
 
 
 /* An attribute path is a sequence of attribute names. */
@@ -147,14 +147,14 @@ struct Expr
     virtual Value * maybeThunk(EvalState & state, Env & env);
     virtual void setName(Symbol name) {};
     virtual PosIdx getPos() const { return noPos; }
-    virtual void compile(ByteCodeChunk &) const { abort(); };
+    virtual void compile(ByteCodeChunkIterator &) const { abort(); };
 };
 
 #define COMMON_METHODS \
     void show(const SymbolTable & symbols, std::ostream & str) const override; \
     void eval(EvalState & state, Env & env, Value & v) override; \
     void bindVars(EvalState & es, const std::shared_ptr<const StaticEnv> & env) override; \
-    void compile(ByteCodeChunk &) const override;
+    void compile(ByteCodeChunkIterator &) const override;
 
 struct ExprLiteral : Expr
 {
@@ -164,7 +164,7 @@ struct ExprLiteral : Expr
         v = this->v;
     };
     void bindVars(EvalState & es, const std::shared_ptr<const StaticEnv> & env) override;
-    void compile(ByteCodeChunk &) const override;
+    void compile(ByteCodeChunkIterator &) const override;
 };
 
 struct ExprInt : ExprLiteral
@@ -420,7 +420,7 @@ struct ExprOpNot : Expr
         } \
         void eval(EvalState & state, Env & env, Value & v) override; \
         PosIdx getPos() const override { return pos; } \
-        void compile(ByteCodeChunk &) const override;   \
+        void compile(ByteCodeChunkIterator &) const override;   \
     };
 
 MakeBinOp(ExprOpEq, "==")

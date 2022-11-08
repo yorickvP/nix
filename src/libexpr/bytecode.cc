@@ -1,44 +1,14 @@
 #include "eval.hh"
 #include "bytecode.hh"
 #include "nixexpr.hh"
+#include <functional>
 namespace nix {
 
-class ByteCodeChunk::Iterator {
-    ByteCodeChunk& c;
-    unsigned int ip;
-public:
-    Iterator(ByteCodeChunk& c, unsigned int ip=0) : c(c), ip(ip) { };
-    template<class T> T get() {
-        T t = *(T*)(&c.code.data()[ip]);
-        ip += sizeof(T);
-        return t;
-    };
-    template<class T> void set(T t) {
-        *(T*)(&c.code.data()[ip]) = t;
-        ip += sizeof(T);
-    };
-    template<class T> Iterator put(T t) {
-        c.push(T::type);
-        ip++;
-        Iterator ret = *this;
-        c.code.resize(ip + sizeof(T));
-        *(T*)(&c.code.data()[ip]) = t;
-        ip += sizeof(T);
-        return ret;
-    };
-    bool done() { return ip >= c.code.size(); };
-};
-
-// enum byteCodeT {
-//     bAttrs,
-//     bLambda, // u32 pos, name, arg, formals, body
-//     bLet, // expr1, expr2 // +1
-//     bAssert, // u32 pos, expr body // -1+1
-//     bConcatStr, // u32 pos, b force, u32 nargs
-//     bDup,
-// };
-
 std::string showAttrPath(const SymbolTable & symbols, const AttrPath & attrPath);
+class ThunkIdx {
+public:
+    uint32_t idx;
+};
 namespace opcode {
 #pragma pack(push, 1)
 struct loadconst {
@@ -74,12 +44,12 @@ struct loadwith {
         return out << "loadwith " << st[name] << " " << level;
     };
 };
-struct pushwith {
+struct pushWith {
     static const byteCodeT type = bWith;
     PosIdx pos;
     uint16_t prevWith;
     std::ostream& repr(std::ostream& out) {
-        return out << "pushwith " << prevWith;
+        return out << "pushWith " << prevWith;
     };
 };
 template<byteCodeT op> struct binop {
@@ -105,26 +75,26 @@ struct pos {
 };
 struct thunk {
     static const byteCodeT type = bThunk;
-    uint32_t ix;
-    std::ostream& repr(std::ostream& out) {return out << "thunk " << ix;};
+    ThunkIdx ix;
+    std::ostream& repr(std::ostream& out) {return out << "thunk " << ix.idx;};
 };
 struct jmp {
     static const byteCodeT type = bJmp;
-    uint32_t ip;
+    int32_t ip;
     std::ostream& repr(std::ostream& out) {return out << "jmp " << ip;};
 };
 
 struct jmpNot {
     static const byteCodeT type = bJmpNot;
     PosIdx pos;
-    uint32_t ip;
+    int32_t ip;
     std::ostream& repr(std::ostream& out) {return out << "jmpnot " << ip;};
 };
 struct call {
     static const byteCodeT type = bCall;
     PosIdx pos;
     uint8_t arity;
-    std::ostream& repr(std::ostream& out) {return out << "call " << arity;};
+    std::ostream& repr(std::ostream& out) {return out << "call " << (uint32_t)arity;};
 };
 struct not_ {
     static const byteCodeT type = bNot;
@@ -149,13 +119,107 @@ struct select {
         return out << "select " << showAttrPath(st, *c.attrPaths[attr]);
     };
 };
+struct assert {
+    static const byteCodeT type = bAssert;
+    PosIdx pos;
+    std::ostream& repr(std::ostream& out) {return out << "assert";};
+};
+struct attrs {
+    static const byteCodeT type = bAttrs;
+    PosIdx pos;
+    uint32_t count;
+    std::ostream& repr(std::ostream& out) {return out << "attrs " << count;};
+};
+struct dup {
+    static const byteCodeT type = bDup;
+    std::ostream& repr(std::ostream& out) {return out << "dup";};
+};
+struct lambda {
+    static const byteCodeT type = bLambda;
+    PosIdx pos;
+    Symbol name;
+    Symbol arg;
+    ThunkIdx body;
+    std::ostream& repr(std::ostream& out, SymbolTable& st, ByteCodeChunk& c) {
+        return out << "lambda " << st[arg] << " " << body.idx;
+    };
+};
+struct let {
+    static const byteCodeT type = bLet;
+    std::ostream& repr(std::ostream& out) {return out << "let";};
+};
+struct letEnd {
+    static const byteCodeT type = bLetEnd;
+    std::ostream& repr(std::ostream& out) {return out << "letend";};
+};
+struct concatStrings {
+    static const byteCodeT type = bConcatStr;
+    PosIdx pos;
+    bool forceString;
+    uint32_t count;
+    // PosIdx positions[]; // TODO
+    std::ostream& repr(std::ostream& out) {return out << "concatstrings " << count;};
+};
 #pragma pack(pop)
 };
 
-void decompile(SymbolTable& st, ByteCodeChunk& c, uint32_t ix, std::ostream & str) {
-    ByteCodeChunk::Iterator i(c, ix);
+class ByteCodeChunkIterator {
+private:
+    template<class T> void set(T t) {
+        *(T*)(&c.code.data()[ip]) = t;
+    };
+public:
+    ByteCodeChunk& c;
+    unsigned int ip;
+    ByteCodeChunkIterator(ByteCodeChunk& c, unsigned int ip=0) : c(c), ip(ip) { };
+    template<class T> T get() {
+        T t = *(T*)(&c.code.data()[ip]);
+        ip += sizeof(T);
+        return t;
+    };
+    template<class T> T peek() {
+        return *(T*)(&c.code.data()[ip]);
+    };
+    template<class T> ByteCodeChunkIterator put(T t) {
+        c.push(T::type);
+        ip++;
+        ByteCodeChunkIterator ret = *this;
+        c.code.resize(ip + sizeof(T));
+        *(T*)(&c.code.data()[ip]) = t;
+        ip += sizeof(T);
+        return ret;
+    };
+    [[nodiscard]] ThunkIdx addThunk(std::function<void(ByteCodeChunkIterator&)> thunk) {
+        auto t = new ByteCodeChunk();
+        ByteCodeChunkIterator it(*t);
+        thunk(it);
+        c.thunks.push_back(t);
+        return ThunkIdx{(uint32_t)c.thunks.size() - 1};
+        //put(opcode::thunk{(uint32_t)(c.thunks.size() - 1)});
+    };
+    void putThunk(std::function<void(ByteCodeChunkIterator&)> thunk) {
+        put(opcode::thunk{addThunk(thunk)});
+    };
+    // todo: type safety would be nice
+    template<class T> void setJmp(ByteCodeChunkIterator& where) {
+        T jmpInstr = peek<T>();
+        jmpInstr.ip = where.ip - ip;
+        set(jmpInstr);
+    };
+    bool done() { return ip >= c.code.size(); };
+};
+
+void decompile(SymbolTable& st, ByteCodeChunk& c, std::ostream & str, std::string_view name, uint indent=0) {
+    ByteCodeChunkIterator i(c);
+    str << std::string(indent, ' ') << "chunk `" << name << "` {" << std::endl;
+    indent += 2;
+    size_t cnt = 0;
+    for (auto& t : c.thunks) {
+        decompile(st, *t, str, "thunk " + std::to_string(cnt++), indent);
+    }
     while (!i.done()) {
         byteCodeT code = (byteCodeT)i.get<uint8_t>();
+        str << std::string(indent, ' ');
         switch(code) {
         case bLoadConst:
             i.get<opcode::loadconst>().repr(str, st, c) << std::endl;
@@ -173,7 +237,7 @@ void decompile(SymbolTable& st, ByteCodeChunk& c, uint32_t ix, std::ostream & st
             i.get<opcode::not_>().repr(str) << std::endl;
             break;
         case bWith:
-            i.get<opcode::pushwith>().repr(str) << std::endl;
+            i.get<opcode::pushWith>().repr(str) << std::endl;
             break;
         case bPopWith:
             i.get<opcode::popWith>().repr(str) << std::endl;
@@ -196,195 +260,195 @@ void decompile(SymbolTable& st, ByteCodeChunk& c, uint32_t ix, std::ostream & st
         case bHasAttr: i.get<opcode::hasAttr>().repr(str, st, c) << std::endl; break;
         case bSelect: i.get<opcode::select>().repr(str, st, c) << std::endl; break;
         case bThunk: i.get<opcode::thunk>().repr(str) << std::endl; break;
-        default: abort();
-        }
+        case bAssert: i.get<opcode::assert>().repr(str) << std::endl; break;
+        case bAttrs: i.get<opcode::attrs>().repr(str) << std::endl; break;
+        case bDup: i.get<opcode::dup>().repr(str) << std::endl; break;
+        case bLambda: i.get<opcode::lambda>().repr(str, st, c) << std::endl; break;
+        case bLet: i.get<opcode::let>().repr(str) << std::endl; break;
+        case bLetEnd: i.get<opcode::letEnd>().repr(str) << std::endl; break;
+        case bConcatStr: i.get<opcode::concatStrings>().repr(str) << std::endl; break;
+        default:
+            assert(false);
+            break;
+        };
     }
+    indent -= 2;
+    str << std::string(indent, ' ') << "}" << std::endl;
 }
 
-void ExprLiteral::compile(ByteCodeChunk & c) const {
-    c.push(bLoadConst);
-    c.push(v);
+void ExprLiteral::compile(ByteCodeChunkIterator & c) const {
+    c.put(opcode::loadconst{c.c.addConstant(v)});
 };
-void pushPos(ByteCodeChunk& c, const PosIdx& pos) {
-    c.push(*reinterpret_cast<const uint32_t*>(&pos));
-}
 
-void ExprVar::compile(ByteCodeChunk & c) const {
+void ExprVar::compile(ByteCodeChunkIterator& c) const {
     // todo - check if this is a local variable
-    c.push(bThunk);
-    ByteCodeChunk& d = c.pushThunk();
-    d.push(bLoadVar);
-    pushPos(d, pos);
-    d.push(*reinterpret_cast<const uint32_t*>(&name));
-    d.push(fromWith);
-    d.push((uint32_t)level);
-    d.push((uint32_t)displ);
+    c.putThunk([this](ByteCodeChunkIterator& c) {
+        if (this->fromWith) {
+            c.put(opcode::loadwith{pos, name, level});
+        } else {
+            c.put(opcode::loadvar{pos, name, level, displ});
+        }
+    });
 };
-void ExprSelect::compile(ByteCodeChunk & c) const {
+void ExprSelect::compile(ByteCodeChunkIterator& c) const {
     e->compile(c);
-    if (def) {
-        c.push(bDup);
-        c.push(bHasAttr);
-        c.push(attrPath);
-        c.push(bNot);
-        c.push(bJmpNot);
-        pushPos(c, noPos);
-        uint32_t afterIx = c.code.size();
-        c.push((uint32_t)0);
-        def->compile(c);
-        c.push(bJmp);
-        c.push((uint32_t)(c.code.size() + 9));
-        c.set(afterIx, c.code.size());
-    }
-    c.push(bSelect);
-    pushPos(c, pos);
-    c.push(attrPath);
+    assert(!def); // TODO
+    // if (def) {
+    //     c.push(bDup);
+    //     c.push(bHasAttr);
+    //     c.push(attrPath);
+    //     c.push(bNot);
+    //     c.push(bJmpNot);
+    //     pushPos(c, noPos);
+    //     uint32_t afterIx = c.code.size();
+    //     c.push((uint32_t)0);
+    //     def->compile(c);
+    //     c.push(bJmp);
+    //     c.push((uint32_t)(c.code.size() + 9));
+    //     c.set(afterIx, c.code.size());
+    // }
+    c.put(opcode::select{pos, c.c.addAttrPath(attrPath)});
 };
-void ExprOpHasAttr::compile(ByteCodeChunk & c) const {
+void ExprOpHasAttr::compile(ByteCodeChunkIterator& c) const {
     e->compile(c);
-    c.push(bHasAttr);
-    c.push(attrPath);
+    c.put(opcode::hasAttr{c.c.addAttrPath(attrPath)});
 };
-void ExprAttrs::compile(ByteCodeChunk & c) const {
-    c.push(bAttrs);
-    pushPos(c, pos);
+void ExprAttrs::compile(ByteCodeChunkIterator& c) const {
+    uint32_t cnt = 0;
     if (recursive) {
         // todo
+        assert(false);
     } else {
         for (auto & i : attrs) {
             // c.push(*reinterpret_cast<const uint32_t*>(&i.first));
             // // todo thunk
             // i.second.e->compile(c);
+            cnt++;
         }
         for (auto & i : dynamicAttrs) {
             // todo
+            cnt++;
         }
     }
+    c.put(opcode::attrs{pos, cnt});
 };
-void ExprList::compile(ByteCodeChunk & c) const {
+void ExprList::compile(ByteCodeChunkIterator& c) const {
     uint32_t cnt = 0;
     for (auto i : elems) {
         // todo: maybe thunk
-        c.push(bThunk);
-        ByteCodeChunk& d = c.pushThunk();
-        i->compile(d);
+        c.putThunk([&](auto& c) {
+            i->compile(c);
+        });
         cnt++;
     }
-    c.push(bList);
-    c.push(cnt);
+    c.put(opcode::list{cnt});
 };
-void ExprLambda::compile(ByteCodeChunk & c) const {
-    c.push(bLambda);
-    pushPos(c, pos);
+void ExprLambda::compile(ByteCodeChunkIterator& c) const {
+    // TODO formals
+    assert(!hasFormals());
+    ThunkIdx idx = c.addThunk([&](auto& c) {
+        body->compile(c);
+    });
+    c.put(opcode::lambda{pos, name, arg, idx});
 
 };
-void ExprCall::compile(ByteCodeChunk & c) const {
-    uint32_t cnt = 0;
+void ExprCall::compile(ByteCodeChunkIterator& c) const {
+    size_t cnt = 0;
     for (auto &i : args) {
         // todo: maybe thunk
-        c.push(bThunk);
-        ByteCodeChunk& d = c.pushThunk();
-        i->compile(d);
+        c.putThunk([&](auto& c) {
+            i->compile(c);
+        });
         cnt++;
     }
+    assert(cnt < 256);
     fun->compile(c);
-    c.push(bCall);
-    pushPos(c, pos);
-    c.push((uint8_t)cnt);
+    c.put(opcode::call{pos, (uint8_t)cnt});
 };
-void ExprLet::compile(ByteCodeChunk &c) const {
-    c.push(bLet);
-
-};
-void ExprWith::compile(ByteCodeChunk &c) const {
+void ExprLet::compile(ByteCodeChunkIterator&c) const {
     attrs->compile(c);
-    c.push(bWith);
-    pushPos(c, pos);
-    c.push((uint16_t)prevWith);
+    c.put(opcode::let{});
     body->compile(c);
-    c.push(bPopWith);
+    c.put(opcode::letEnd{});
 
 };
-void ExprIf::compile(ByteCodeChunk &c) const {
+void ExprWith::compile(ByteCodeChunkIterator&c) const {
+    attrs->compile(c);
+    c.put(opcode::pushWith{pos, (uint16_t)prevWith});
+    body->compile(c);
+    c.put(opcode::popWith{});
+
+};
+void ExprIf::compile(ByteCodeChunkIterator&c) const {
     cond->compile(c);
-    c.push(bJmpNot);
-    pushPos(c, pos);
-    uint32_t elsepos = c.code.size();
-    c.push((uint32_t)0);
+    ByteCodeChunkIterator elseJmp = c.put(opcode::jmpNot{pos});
     then->compile(c);
-    c.push(bJmp);
-    uint32_t endpos = c.code.size();
-    c.push((uint32_t)0);
-    c.set(elsepos, c.code.size());
+    ByteCodeChunkIterator endJmp = c.put(opcode::jmp{});
+    elseJmp.setJmp<opcode::jmpNot>(c);
     else_->compile(c);
-    c.set(endpos, c.code.size());
+    endJmp.setJmp<opcode::jmp>(c);
 };
-void ExprAssert::compile(ByteCodeChunk &c) const {
-    c.push(bAssert);
-    pushPos(c, pos);
-
+void ExprAssert::compile(ByteCodeChunkIterator&c) const {
+    cond->compile(c);
+    c.put(opcode::assert{pos});
+    body->compile(c);
 };
-void ExprOpNot::compile(ByteCodeChunk &c) const {
+void ExprOpNot::compile(ByteCodeChunkIterator&c) const {
     e->compile(c);
-    c.push(bNot);
+    c.put(opcode::not_{});
 };
 
-void ExprOpEq::compile(ByteCodeChunk &c) const {
+void ExprOpEq::compile(ByteCodeChunkIterator&c) const {
     e1->compile(c);
     e2->compile(c);
-    c.push(bOpEq);
-    pushPos(c, pos);
+    c.put(opcode::binop<bOpEq>{pos});
 };
-void ExprOpNEq::compile(ByteCodeChunk &c) const {
+void ExprOpNEq::compile(ByteCodeChunkIterator&c) const {
     e1->compile(c);
     e2->compile(c);
-    c.push(bOpNEq);
-    pushPos(c, pos);
+    c.put(opcode::binop<bOpNEq>{pos});
 };
-void ExprOpAnd::compile(ByteCodeChunk &c) const {
+void ExprOpAnd::compile(ByteCodeChunkIterator&c) const {
     e1->compile(c);
     e2->compile(c);
-    c.push(bOpAnd);
-    pushPos(c, pos);
+    c.put(opcode::binop<bOpAnd>{pos});
 };
-void ExprOpOr::compile(ByteCodeChunk &c) const {
+void ExprOpOr::compile(ByteCodeChunkIterator&c) const {
     e1->compile(c);
     e2->compile(c);
-    c.push(bOpOr);
-    pushPos(c, pos);
+    c.put(opcode::binop<bOpOr>{pos});
 };
-void ExprOpImpl::compile(ByteCodeChunk &c) const {
+void ExprOpImpl::compile(ByteCodeChunkIterator&c) const {
     e1->compile(c);
     e2->compile(c);
-    c.push(bOpImpl);
-    pushPos(c, pos);
+    c.put(opcode::binop<bOpImpl>{pos});
 };
-void ExprOpUpdate::compile(ByteCodeChunk &c) const {
+void ExprOpUpdate::compile(ByteCodeChunkIterator&c) const {
     e1->compile(c);
     e2->compile(c);
-    c.push(bOpUpdate);
-    pushPos(c, pos);
+    c.put(opcode::binop<bOpUpdate>{pos});
 };
-void ExprOpConcatLists::compile(ByteCodeChunk &c) const {
+void ExprOpConcatLists::compile(ByteCodeChunkIterator&c) const {
     e1->compile(c);
     e2->compile(c);
-    c.push(bOpConcatList);
-    pushPos(c, pos);
+    c.put(opcode::binop<bOpConcatList>{pos});
 };
 
-void ExprConcatStrings::compile(ByteCodeChunk &c) const {
+void ExprConcatStrings::compile(ByteCodeChunkIterator&c) const {
+    for (auto & i : *es) {
+        i.second->compile(c);
+    }
+    // todo: save positions somewhere
+    c.put(opcode::concatStrings{pos, forceString, (uint32_t)es->size()});
+};
+void ExprPos::compile(ByteCodeChunkIterator& c) const {
+    c.put(opcode::pos{pos});
+};
 
-};
-void ExprPos::compile(ByteCodeChunk & c) const {
-    c.push(bPos);
-    pushPos(c, pos);
-};
-ByteCodeChunk& newByteCode() {
-    return *new ByteCodeChunk();
-};
 void decompileExpr(Expr* e, SymbolTable& st, std::ostream& str) {
     ByteCodeChunk toplevel;
-    e->compile(toplevel);
-    decompile(st, toplevel, 0, str);
+    ByteCodeChunkIterator c(toplevel);
+    e->compile(c);
+    decompile(st, toplevel, str, "toplevel", 0);
 }
 }

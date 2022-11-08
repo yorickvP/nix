@@ -623,6 +623,7 @@ static void prim_decompile(EvalState & state, const PosIdx pos, Value ** args, V
     assert(args[0]->isLambda());
     Expr* body = args[0]->lambda.fun->body;
     std::ostringstream ss;
+    ss << std::endl;
     decompileExpr(body, state.symbols, ss);
     std::string res = ss.str();
     v.mkString(res);
