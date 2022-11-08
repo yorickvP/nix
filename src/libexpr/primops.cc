@@ -617,7 +617,7 @@ static Bindings::iterator getAttr(
     return value;
 }
 
-void decompileExpr(Expr* e, SymbolTable& st, std::ostream& str);
+void decompileExpr(Expr* e, const SymbolTable& st, std::ostream& str);
 static void prim_decompile(EvalState & state, const PosIdx pos, Value ** args, Value & v) {
     state.forceValue(*args[0], pos);
     assert(args[0]->isLambda());
@@ -629,6 +629,7 @@ static void prim_decompile(EvalState & state, const PosIdx pos, Value ** args, V
     v.mkString(res);
 }
 
+
 static RegisterPrimOp primop_decompile({
     .name = "decompile",
     .args = {"f"},
@@ -636,6 +637,26 @@ static RegisterPrimOp primop_decompile({
       Return decompiled output for lambda arg
     )",
     .fun = prim_decompile,
+});
+
+Expr* compileExpr(Expr* e);
+static void prim_compile(EvalState & state, const PosIdx pos, Value ** args, Value & v) {
+    state.forceValue(*args[0], pos);
+    assert(args[0]->isLambda());
+    Expr* newBody = compileExpr(args[0]->lambda.fun->body);
+    v = *args[0];
+    v.lambda.fun = new ExprLambda(*args[0]->lambda.fun);
+    v.lambda.fun->body = newBody;
+}
+
+
+static RegisterPrimOp primop_compile({
+    .name = "compile",
+    .args = {"f"},
+    .doc = R"(
+      Return compiled version of lambda arg
+    )",
+    .fun = prim_compile,
 });
 
 static void prim_genericClosure(EvalState & state, const PosIdx pos, Value * * args, Value & v)
