@@ -12,7 +12,8 @@
 namespace nix {
 enum byteCodeT {
     bLoadConst = 1, // u32 ix: Value& consts[ix] // +1
-    bLoadVar, // u32 pos, symbol name, bool fromWith, u32 level, u32 displ // +1
+    bLoadVar, // u32 pos, symbol name, u32 level, u32 displ // +1
+    bLoadWith, // u32 pos, symbol name, u32 level // +1
     bSelect, // u32 pos, attrpath, expr default // -1+1
     bHasAttr, // attrpath // -1+1
     bAttrs,
@@ -20,8 +21,8 @@ enum byteCodeT {
     bLambda, // u32 pos, name, arg, formals, body
     bCall, // u32 pos, pop(1)(pop(nArgs))
     bLet, // expr1, expr2 // +1
-    bWith, // u32 pos, expr body, u32 prevWith // -1+1
-    bIf, // u32 pos, expr else // -1+1
+    bWith, // u32 pos, u32 prevWith // -1+1
+    bJmpNot, // u32 pos, expr else // -1+1
     bAssert, // u32 pos, expr body // -1+1
     bNot, // -1+1
     bOpEq, // -2+1
@@ -33,15 +34,17 @@ enum byteCodeT {
     bOpConcatList, // -2+1
     bConcatStr, // u32 pos, b force, u32 nargs
     bPos, // u32 pos
-    bPopEnv,
+    bPopWith,
     bJmp, // u32 target
     bDup,
+    bThunk, // u32 thunkNr
 };
-
 struct ByteCodeChunk {
+    class Iterator;
     std::vector<uint8_t> code;
     std::vector<const Value*> consts;
     std::vector<const AttrPath*> attrPaths;
+    std::vector<ByteCodeChunk*> thunks;
     ByteCodeChunk() = default;
     ByteCodeChunk(ByteCodeChunk &&) = delete;
     ByteCodeChunk &operator=(ByteCodeChunk &&) = delete;
@@ -76,6 +79,12 @@ struct ByteCodeChunk {
     void push(const AttrPath &p) {
         attrPaths.push_back(&p);
         push((uint32_t)(attrPaths.size() - 1));
+    };
+    ByteCodeChunk &pushThunk() {
+        uint32_t ix = thunks.size();
+        push((uint32_t)ix);
+        thunks.push_back(new ByteCodeChunk());
+        return *thunks[ix];
     };
     void push(bool x) { code.push_back(x); };
     uint32_t get_u32(uint32_t ix) {

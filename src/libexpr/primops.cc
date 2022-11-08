@@ -617,16 +617,13 @@ static Bindings::iterator getAttr(
     return value;
 }
 
-void decompile(SymbolTable&, ByteCodeChunk& c, uint32_t ix, std::ostream & str);
-ByteCodeChunk& newByteCode();
+void decompileExpr(Expr* e, SymbolTable& st, std::ostream& str);
 static void prim_decompile(EvalState & state, const PosIdx pos, Value ** args, Value & v) {
     state.forceValue(*args[0], pos);
     assert(args[0]->isLambda());
     Expr* body = args[0]->lambda.fun->body;
-    ByteCodeChunk& c = newByteCode();
-    body->compile(c);
     std::ostringstream ss;
-    decompile(state.symbols, c, 0, ss);
+    decompileExpr(body, state.symbols, ss);
     std::string res = ss.str();
     v.mkString(res);
 }
