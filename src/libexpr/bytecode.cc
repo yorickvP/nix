@@ -23,7 +23,9 @@ struct loadconst {
 struct list {
     static const byteCodeT type = bList;
     uint32_t size;
-    std::ostream& repr(std::ostream& out) {return out << "list " << size;};
+    std::ostream& repr(std::ostream& out, SymbolTable& st, ByteCodeChunk& c) {
+        return out << "list " << size;
+    };
 };
 struct loadvar {
     static const byteCodeT type = bLoadVar;
@@ -31,7 +33,7 @@ struct loadvar {
     Symbol name;
     uint32_t level;
     uint32_t displacement;
-    std::ostream& repr(std::ostream& out, SymbolTable& st) {
+    std::ostream& repr(std::ostream& out, SymbolTable& st, ByteCodeChunk& c) {
         return out << "loadvar " << st[name] << " " << level << " " << displacement;
     };
 };
@@ -40,7 +42,7 @@ struct loadwith {
     PosIdx pos;
     Symbol name;
     uint32_t level;
-    std::ostream& repr(std::ostream& out, SymbolTable& st) {
+    std::ostream& repr(std::ostream& out, SymbolTable& st, ByteCodeChunk& c) {
         return out << "loadwith " << st[name] << " " << level;
     };
 };
@@ -48,14 +50,14 @@ struct pushWith {
     static const byteCodeT type = bWith;
     PosIdx pos;
     uint16_t prevWith;
-    std::ostream& repr(std::ostream& out) {
+    std::ostream& repr(std::ostream& out, SymbolTable& st, ByteCodeChunk& c) {
         return out << "pushWith " << prevWith;
     };
 };
 template<byteCodeT op> struct binop {
     static const byteCodeT type = op;
     PosIdx pos;
-    std::ostream& repr(std::ostream& out) {
+    std::ostream& repr(std::ostream& out, SymbolTable& st, ByteCodeChunk& c) {
         switch (op) {
             case bOpEq: return out << "eq";
             case bOpNEq: return out << "neq";
@@ -71,38 +73,38 @@ template<byteCodeT op> struct binop {
 struct pos {
     static const byteCodeT type = bPos;
     PosIdx pos;
-    std::ostream& repr(std::ostream& out) {return out << "pos";};
+    std::ostream& repr(std::ostream& out, SymbolTable&, ByteCodeChunk&) {return out << "pos";};
 };
 struct thunk {
     static const byteCodeT type = bThunk;
     ThunkIdx ix;
-    std::ostream& repr(std::ostream& out) {return out << "thunk " << ix.idx;};
+    std::ostream& repr(std::ostream& out, SymbolTable&, ByteCodeChunk&) {return out << "thunk " << ix.idx;};
 };
 struct jmp {
     static const byteCodeT type = bJmp;
     int32_t ip;
-    std::ostream& repr(std::ostream& out) {return out << "jmp " << ip;};
+    std::ostream& repr(std::ostream& out, SymbolTable&, ByteCodeChunk&) {return out << "jmp " << ip;};
 };
 
 struct jmpNot {
     static const byteCodeT type = bJmpNot;
     PosIdx pos;
     int32_t ip;
-    std::ostream& repr(std::ostream& out) {return out << "jmpnot " << ip;};
+    std::ostream& repr(std::ostream& out, SymbolTable&, ByteCodeChunk&) {return out << "jmpnot " << ip;};
 };
 struct call {
     static const byteCodeT type = bCall;
     PosIdx pos;
     uint8_t arity;
-    std::ostream& repr(std::ostream& out) {return out << "call " << (uint32_t)arity;};
+    std::ostream& repr(std::ostream& out, SymbolTable&, ByteCodeChunk&) {return out << "call " << (uint32_t)arity;};
 };
 struct not_ {
     static const byteCodeT type = bNot;
-    std::ostream& repr(std::ostream& out) {return out << "not";};
+    std::ostream& repr(std::ostream& out, SymbolTable&, ByteCodeChunk&) {return out << "not";};
 };
 struct popWith {
     static const byteCodeT type = bPopWith;
-    std::ostream& repr(std::ostream& out) {return out << "popwith";};
+    std::ostream& repr(std::ostream& out, SymbolTable&, ByteCodeChunk&) {return out << "popwith";};
 };
 struct hasAttr {
     static const byteCodeT type = bHasAttr;
@@ -122,17 +124,17 @@ struct select {
 struct assert {
     static const byteCodeT type = bAssert;
     PosIdx pos;
-    std::ostream& repr(std::ostream& out) {return out << "assert";};
+    std::ostream& repr(std::ostream& out, SymbolTable&, ByteCodeChunk&) {return out << "assert";};
 };
 struct attrs {
     static const byteCodeT type = bAttrs;
     PosIdx pos;
     uint32_t count;
-    std::ostream& repr(std::ostream& out) {return out << "attrs " << count;};
+    std::ostream& repr(std::ostream& out, SymbolTable&, ByteCodeChunk&) {return out << "attrs " << count;};
 };
 struct dup {
     static const byteCodeT type = bDup;
-    std::ostream& repr(std::ostream& out) {return out << "dup";};
+    std::ostream& repr(std::ostream& out, SymbolTable&, ByteCodeChunk&) {return out << "dup";};
 };
 struct lambda {
     static const byteCodeT type = bLambda;
@@ -146,11 +148,11 @@ struct lambda {
 };
 struct let {
     static const byteCodeT type = bLet;
-    std::ostream& repr(std::ostream& out) {return out << "let";};
+    std::ostream& repr(std::ostream& out, SymbolTable&, ByteCodeChunk&) {return out << "let";};
 };
 struct letEnd {
     static const byteCodeT type = bLetEnd;
-    std::ostream& repr(std::ostream& out) {return out << "letend";};
+    std::ostream& repr(std::ostream& out, SymbolTable&, ByteCodeChunk&) {return out << "letend";};
 };
 struct concatStrings {
     static const byteCodeT type = bConcatStr;
@@ -158,7 +160,7 @@ struct concatStrings {
     bool forceString;
     uint32_t count;
     // PosIdx positions[]; // TODO
-    std::ostream& repr(std::ostream& out) {return out << "concatstrings " << count;};
+    std::ostream& repr(std::ostream& out, SymbolTable&, ByteCodeChunk&) {return out << "concatstrings " << count;};
 };
 #pragma pack(pop)
 };
@@ -209,6 +211,49 @@ public:
     bool done() { return ip >= c.code.size(); };
 };
 
+template<class Visitor>
+void decode(ByteCodeChunk& c, Visitor v) {
+    ByteCodeChunkIterator i(c);
+    while (!i.done()) {
+        byteCodeT code = (byteCodeT)i.get<uint8_t>();
+        switch(code) {
+        case bLoadConst: v(i.get<opcode::loadconst>()); break;
+        case bList: v(i.get<opcode::list>()); break;
+        case bLoadVar: v(i.get<opcode::loadvar>()); break;
+        case bLoadWith: v(i.get<opcode::loadwith>()); break;
+        case bNot: v(i.get<opcode::not_>()); break;
+        case bWith: v(i.get<opcode::pushWith>()); break;
+        case bPopWith: v(i.get<opcode::popWith>()); break;
+        case bJmp: v(i.get<opcode::jmp>()); break;
+        case bJmpNot: v(i.get<opcode::jmpNot>()); break;
+        case bOpEq: v(i.get<opcode::binop<bOpEq>>()); break;
+        case bOpNEq: v(i.get<opcode::binop<bOpNEq>>()); break;
+        case bOpAnd: v(i.get<opcode::binop<bOpAnd>>()); break;
+        case bOpOr: v(i.get<opcode::binop<bOpOr>>()); break;
+        case bOpImpl: v(i.get<opcode::binop<bOpImpl>>()); break;
+        case bOpUpdate: v(i.get<opcode::binop<bOpUpdate>>()); break;
+        case bOpConcatList: v(i.get<opcode::binop<bOpConcatList>>()); break;
+        case bPos: v(i.get<opcode::pos>()); break;
+        case bCall: v(i.get<opcode::call>()); break;
+        case bHasAttr: v(i.get<opcode::hasAttr>()); break;
+        case bSelect: v(i.get<opcode::select>()); break;
+        case bThunk: v(i.get<opcode::thunk>()); break;
+        case bAssert: v(i.get<opcode::assert>()); break;
+        case bAttrs: v(i.get<opcode::attrs>()); break;
+        case bDup: v(i.get<opcode::dup>()); break;
+        case bLambda: v(i.get<opcode::lambda>()); break;
+        case bLet: v(i.get<opcode::let>()); break;
+        case bLetEnd: v(i.get<opcode::letEnd>()); break;
+        case bConcatStr: v(i.get<opcode::concatStrings>()); break;
+        default:
+            assert(false);
+            break;
+        };
+    }
+}
+// template <class... Ts> struct match : Ts... { using Ts::operator()...; };
+// template <class... Ts> match(Ts...)->match<Ts...>;
+
 void decompile(SymbolTable& st, ByteCodeChunk& c, std::ostream & str, std::string_view name, uint indent=0) {
     ByteCodeChunkIterator i(c);
     str << std::string(indent, ' ') << "chunk `" << name << "` {" << std::endl;
@@ -217,61 +262,9 @@ void decompile(SymbolTable& st, ByteCodeChunk& c, std::ostream & str, std::strin
     for (auto& t : c.thunks) {
         decompile(st, *t, str, "thunk " + std::to_string(cnt++), indent);
     }
-    while (!i.done()) {
-        byteCodeT code = (byteCodeT)i.get<uint8_t>();
-        str << std::string(indent, ' ');
-        switch(code) {
-        case bLoadConst:
-            i.get<opcode::loadconst>().repr(str, st, c) << std::endl;
-            break;
-        case bList:
-            i.get<opcode::list>().repr(str) << std::endl;
-            break;
-        case bLoadVar: {
-            i.get<opcode::loadvar>().repr(str, st) << std::endl;
-        }; break;
-        case bLoadWith: {
-            i.get<opcode::loadwith>().repr(str, st) << std::endl;
-        }; break;
-        case bNot:
-            i.get<opcode::not_>().repr(str) << std::endl;
-            break;
-        case bWith:
-            i.get<opcode::pushWith>().repr(str) << std::endl;
-            break;
-        case bPopWith:
-            i.get<opcode::popWith>().repr(str) << std::endl;
-            break;
-        case bJmp:
-            i.get<opcode::jmp>().repr(str) << std::endl;
-            break;
-        case bJmpNot:
-            i.get<opcode::jmpNot>().repr(str) << std::endl;
-            break;
-        case bOpEq: i.get<opcode::binop<bOpEq>>().repr(str) << std::endl; break;
-        case bOpNEq: i.get<opcode::binop<bOpNEq>>().repr(str) << std::endl; break;
-        case bOpAnd: i.get<opcode::binop<bOpAnd>>().repr(str) << std::endl; break;
-        case bOpOr: i.get<opcode::binop<bOpOr>>().repr(str) << std::endl; break;
-        case bOpImpl: i.get<opcode::binop<bOpImpl>>().repr(str) << std::endl; break;
-        case bOpUpdate: i.get<opcode::binop<bOpUpdate>>().repr(str) << std::endl; break;
-        case bOpConcatList: i.get<opcode::binop<bOpConcatList>>().repr(str) << std::endl; break;
-        case bPos: i.get<opcode::pos>().repr(str) << std::endl; break;
-        case bCall: i.get<opcode::call>().repr(str) << std::endl; break;
-        case bHasAttr: i.get<opcode::hasAttr>().repr(str, st, c) << std::endl; break;
-        case bSelect: i.get<opcode::select>().repr(str, st, c) << std::endl; break;
-        case bThunk: i.get<opcode::thunk>().repr(str) << std::endl; break;
-        case bAssert: i.get<opcode::assert>().repr(str) << std::endl; break;
-        case bAttrs: i.get<opcode::attrs>().repr(str) << std::endl; break;
-        case bDup: i.get<opcode::dup>().repr(str) << std::endl; break;
-        case bLambda: i.get<opcode::lambda>().repr(str, st, c) << std::endl; break;
-        case bLet: i.get<opcode::let>().repr(str) << std::endl; break;
-        case bLetEnd: i.get<opcode::letEnd>().repr(str) << std::endl; break;
-        case bConcatStr: i.get<opcode::concatStrings>().repr(str) << std::endl; break;
-        default:
-            assert(false);
-            break;
-        };
-    }
+    decode(c, [&](auto t) {
+        t.repr(str, st, c) << std::endl;
+    });
     indent -= 2;
     str << std::string(indent, ' ') << "}" << std::endl;
 }
