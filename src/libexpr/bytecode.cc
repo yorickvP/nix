@@ -455,13 +455,21 @@ void ExprAttrs::compile(ByteCodeChunkIterator& c) const {
     }
     c.put(opcode::attrs{pos, cnt});
 };
+static void bmaybeThunk(ByteCodeChunkIterator& c, const Expr* e) {
+    if (dynamic_cast<const ExprLiteral*>(e) != nullptr ||
+        dynamic_cast<const ExprVar*>(e) != nullptr) {
+        e->compile(c);
+    } else {
+        c.putThunk([e](ByteCodeChunkIterator& c) {
+            e->compile(c);
+        });
+    }
+}
 void ExprList::compile(ByteCodeChunkIterator& c) const {
     uint32_t cnt = 0;
     for (auto i : elems) {
         // todo: maybe thunk
-        c.putThunk([&](auto& c) {
-            i->compile(c);
-        });
+        bmaybeThunk(c, i);
         cnt++;
     }
     c.put(opcode::list{cnt});
@@ -478,10 +486,7 @@ void ExprLambda::compile(ByteCodeChunkIterator& c) const {
 void ExprCall::compile(ByteCodeChunkIterator& c) const {
     size_t cnt = 0;
     for (auto &i : args) {
-        // todo: maybe thunk
-        c.putThunk([&](auto& c) {
-            i->compile(c);
-        });
+        bmaybeThunk(c, i);
         cnt++;
     }
     assert(cnt < 256);
