@@ -737,7 +737,7 @@ void printStaticEnvBindings(const SymbolTable & st, const StaticEnv & se)
 // just for the current level of Env, not the whole chain.
 void printWithBindings(const SymbolTable & st, const Env & env)
 {
-    if (env.type == Env::HasWithAttrs) {
+    if (env.hasWith && env.values[0]->type() == nAttrs) {
         std::cout << "with: ";
         std::cout << ANSI_MAGENTA;
         Bindings::iterator j = env.values[0]->attrs->begin();
@@ -791,7 +791,7 @@ void mapStaticEnvBindings(const SymbolTable & st, const StaticEnv & se, const En
     if (env.up && se.up) {
         mapStaticEnvBindings(st, *se.up, *env.up, vm);
 
-        if (env.type == Env::HasWithAttrs) {
+        if (env.hasWith && env.values[0]->type() == nAttrs) {
             // add 'with' bindings.
             Bindings::iterator j = env.values[0]->attrs->begin();
             while (j != env.values[0]->attrs->end()) {
@@ -1092,12 +1092,9 @@ inline Value * EvalState::lookupVar(Env * env, const ExprVar & var, bool noEval)
     if (!var.fromWith) return env->values[var.displ];
 
     while (1) {
-        if (env->type == Env::HasWithExpr) {
+        if (env->values[0]->type() == nThunk) {
             if (noEval) return 0;
-            Value * v = allocValue();
-            evalAttrs(*env->up, (Expr *) env->values[0], *v);
-            env->values[0] = v;
-            env->type = Env::HasWithAttrs;
+            forceAttrs(*env->values[0], noPos);
         }
         Bindings::iterator j = env->values[0]->attrs->find(var.name);
         if (j != env->values[0]->attrs->end()) {
@@ -1108,6 +1105,10 @@ inline Value * EvalState::lookupVar(Env * env, const ExprVar & var, bool noEval)
             throwUndefinedVarError(var.pos, "undefined variable '%1%'", symbols[var.name], *env, const_cast<ExprVar&>(var));
         for (size_t l = env->prevWith; l; --l, env = env->up) ;
     }
+}
+
+Value * EvalState::lookupVarWith(Env * env, const ExprVar & var, bool noEval) {
+    return lookupVar(env, var, noEval);
 }
 
 void EvalState::mkList(Value & v, size_t size)
@@ -1774,8 +1775,8 @@ void ExprWith::eval(EvalState & state, Env & env, Value & v)
     Env & env2(state.allocEnv(1));
     env2.up = &env;
     env2.prevWith = prevWith;
-    env2.type = Env::HasWithExpr;
-    env2.values[0] = (Value *) attrs;
+    env2.hasWith = true;
+    env2.values[0] = attrs->maybeThunk(state, env);
 
     body->eval(state, env2, v);
 }

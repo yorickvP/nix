@@ -42,8 +42,8 @@ struct PrimOp
 struct Env
 {
     Env * up;
-    unsigned short prevWith:14; // nr of levels up to next `with' environment
-    enum { Plain = 0, HasWithExpr, HasWithAttrs } type:2;
+    unsigned short prevWith:15; // nr of levels up to next `with' environment
+    bool hasWith:1;
     Value * values[0];
 };
 
@@ -449,6 +449,7 @@ public:
 
     std::optional<Doc> getDoc(Value & v);
 
+    Value * lookupVarWith(Env * env, const ExprVar & var, bool noEval);
 private:
 
     inline Value * lookupVar(Env * env, const ExprVar & var, bool noEval);

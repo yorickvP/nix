@@ -70,7 +70,7 @@ Env & EvalState::allocEnv(size_t size)
 #endif
         env = (Env *) allocBytes(sizeof(Env) + size * sizeof(Value *));
 
-    env->type = Env::Plain;
+    env->hasWith = false;
 
     /* We assume that env->values has been cleared by the allocator; maybeThunk() and lookupVar fromWith expect this. */
 
