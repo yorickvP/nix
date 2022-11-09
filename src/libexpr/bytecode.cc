@@ -398,12 +398,29 @@ static void eval(ByteCodeChunk& c, EvalState & state, Env & env, Value & v) {
             v->mkThunk(&env, e);
             stack.push(v);
         },
-        // opcode::assert
+        [&](opcode::assert op) {
+            Value* v = stack.top(); stack.pop();
+            bool b = state.forceBool(*v, op.pos);
+            if (!b) {
+                // todo: debug repl
+                throw AssertionError({
+                        .msg = hintfmt("assertion '?' failed"),
+                        .errPos = state.positions[op.pos]
+                    });
+            }
+        },
         // opcode::attrs
         [&stack](opcode::dup op) {
             stack.push(stack.top());
         },
-        // opcode::lambda
+        [&stack, &c, &state, &env](opcode::lambda op) {
+            // todo: formals
+            Expr *compiled = new ExprCompiled(*c.thunks[op.body.idx]);
+            ExprLambda *l = new ExprLambda(op.pos, op.arg, nullptr, compiled);
+            l->setName(op.name);
+            stack.push(state.allocValue());
+            stack.top()->mkLambda(&env, l);
+        },
         // opcode::let
         // opcode::letEnd
         // opcode::concatStrings
@@ -419,7 +436,7 @@ void ExprLiteral::compile(ByteCodeChunkIterator & c) const {
 };
 
 void ExprVar::compile(ByteCodeChunkIterator& c) const {
-    // todo - check if this is a local variable
+    // todo: when is this thunk neccesary?
     c.putThunk([this](ByteCodeChunkIterator& c) {
         if (this->fromWith) {
             c.put(opcode::loadwith{pos, name, level});
