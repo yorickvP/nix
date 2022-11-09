@@ -11,6 +11,7 @@
 #include "value-to-json.hh"
 #include "value-to-xml.hh"
 #include "primops.hh"
+#include "bytecode.hh"
 
 #include <boost/container/small_vector.hpp>
 
@@ -617,7 +618,6 @@ static Bindings::iterator getAttr(
     return value;
 }
 
-void decompileExpr(Expr* e, const SymbolTable& st, std::ostream& str);
 static void prim_decompile(EvalState & state, const PosIdx pos, Value ** args, Value & v) {
     state.forceValue(*args[0], pos);
     assert(args[0]->isLambda());
@@ -639,7 +639,6 @@ static RegisterPrimOp primop_decompile({
     .fun = prim_decompile,
 });
 
-Expr* compileExpr(Expr* e);
 static void prim_compile(EvalState & state, const PosIdx pos, Value ** args, Value & v) {
     state.forceValue(*args[0], pos);
     assert(args[0]->isLambda());

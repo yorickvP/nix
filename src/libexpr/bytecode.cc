@@ -5,6 +5,53 @@
 #include <stack>
 namespace nix {
 
+struct ByteCodeChunk {
+    std::vector<uint8_t> code;
+    std::vector<const Value*> consts;
+    std::vector<const AttrPath*> attrPaths;
+    std::vector<ByteCodeChunk*> thunks;
+    ByteCodeChunk() = default;
+    ByteCodeChunk(ByteCodeChunk &&) = delete;
+    ByteCodeChunk &operator=(ByteCodeChunk &&) = delete;
+    uint32_t addConstant(const Value &v) {
+        consts.push_back(&v);
+        return consts.size() - 1;
+    };
+    uint32_t addAttrPath(const AttrPath &p) {
+        attrPaths.push_back(&p);
+        return attrPaths.size() - 1;
+    };
+};
+enum byteCodeT {
+    bLoadConst = 1, // u32 ix: Value& consts[ix] // +1
+    bLoadVar, // u32 pos, symbol name, u32 level, u32 displ // +1
+    bLoadWith, // u32 pos, symbol name, u32 level // +1
+    bSelect, // u32 pos, attrpath, expr default // -1+1
+    bHasAttr, // attrpath // -1+1
+    bAttrs,
+    bList, // uint32 length, // -n+1
+    bLambda, // u32 pos, name, arg, formals, body
+    bCall, // u32 pos, pop(1)(pop(nArgs))
+    bLet, // -1
+    bLetEnd, // 0
+    bWith, // u32 pos, u32 prevWith // -1+1
+    bJmpNot, // u32 pos, expr else // -1+1
+    bAssert, // u32 pos // -1+1
+    bNot, // -1+1
+    bOpEq, // -2+1
+    bOpNEq, // -2+1
+    bOpAnd, // -2+1
+    bOpOr, // -2+1
+    bOpImpl, // -2+1
+    bOpUpdate, // -2+1
+    bOpConcatList, // -2+1
+    bConcatStr, // u32 pos, b force, u32 nargs
+    bPos, // u32 pos
+    bPopWith,
+    bJmp, // u32 target
+    bDup,
+    bThunk, // u32 thunkNr
+};
 std::string showAttrPath(const SymbolTable & symbols, const AttrPath & attrPath);
 class ThunkIdx {
 public:
@@ -184,7 +231,7 @@ public:
         return *(T*)(&c.code.data()[ip]);
     };
     template<class T> ByteCodeChunkIterator put(T t) {
-        c.push(T::type);
+        c.code.push_back(T::type);
         ip++;
         ByteCodeChunkIterator ret = *this;
         c.code.resize(ip + sizeof(T));
