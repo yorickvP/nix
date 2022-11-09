@@ -313,13 +313,28 @@ static void eval(ByteCodeChunk& c, EvalState & state, Env & env, Value & v) {
             for (auto l = op.level; l; --l, e = e->up) ;
             stack.push(e->values[op.displacement]);
         },
-        // opcode::loadwith
+        [&state, &stack, &env](opcode::loadwith op) {
+            ExprVar var(op.pos, op.name);
+            var.fromWith = true;
+            var.level = op.level;
+            stack.push(state.lookupVarWith(&env, var, false));
+        },
         [&state, &stack](opcode::not_ op) {
             bool b = state.forceBool(*stack.top(), noPos);
             stack.top()->boolean = !b;
         },
-        // opcode::pushWith
-        // opcode::popWith
+        [&env, &stack, &state](opcode::pushWith op) {
+            Env & env2(state.allocEnv(1));
+            env2.up = &env;
+            env2.prevWith = op.prevWith;
+            env2.hasWith = true;
+            env2.values[0] = stack.top();
+            stack.pop();
+            env = env2;
+        },
+        [&env](opcode::popWith op) {
+            env = *env.up;
+        },
         // opcode::jmp
         // opcode::jmpNot
         [&stack, &state](opcode::binop<bOpEq> op) {
@@ -501,7 +516,7 @@ void ExprLet::compile(ByteCodeChunkIterator&c) const {
 
 };
 void ExprWith::compile(ByteCodeChunkIterator&c) const {
-    attrs->compile(c);
+    bmaybeThunk(c, attrs);
     c.put(opcode::pushWith{pos, (uint16_t)prevWith});
     body->compile(c);
     c.put(opcode::popWith{});
