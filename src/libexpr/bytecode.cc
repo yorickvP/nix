@@ -3,6 +3,8 @@
 #include "nixexpr.hh"
 #include <functional>
 #include <stack>
+#include <iomanip>
+
 namespace nix {
 
 struct ByteCodeChunk {
@@ -230,15 +232,17 @@ public:
     // todo: type safety would be nice
     template<class T> void setJmp(ByteCodeChunkIterator& where) {
         T jmpInstr = peek<T>();
-        jmpInstr.ip = where.ip - ip;
+        jmpInstr.ip = where.ip - ip + 1;
         set(jmpInstr);
+    };
+    void jump(int32_t offset) {
+        ip += offset;
     };
     bool done() { return ip >= c.code.size(); };
 };
 
 template<class Visitor>
-void decode(ByteCodeChunk& c, Visitor v) {
-    ByteCodeChunkIterator i(c);
+void decode(ByteCodeChunkIterator& i, Visitor v) {
     while (!i.done()) {
         byteCodeT code = (byteCodeT)i.get<uint8_t>();
         switch(code) {
@@ -287,8 +291,9 @@ void decompile(const SymbolTable& st, ByteCodeChunk& c, std::ostream & str, std:
     for (auto& t : c.thunks) {
         decompile(st, *t, str, "thunk " + std::to_string(cnt++), indent);
     }
-    decode(c, [&](auto t) {
+    decode(i, [&](auto t) {
         str << std::string(indent, ' ');
+        str << std::setw(3) << (i.ip - sizeof(t) - 1) << ": ";
         t.repr(str, st, c) << std::endl;
     });
     indent -= 2;
@@ -320,7 +325,7 @@ Expr* compileExpr(Expr* e) {
 static void eval(ByteCodeChunk& c, EvalState & state, Env & env, Value & v) {
     ByteCodeChunkIterator i(c);
     std::stack<Value*> stack;
-    decode(c, match {
+    decode(i, match {
         [&stack, &c](opcode::loadconst op) {
             stack.push(const_cast<Value*>(c.consts[op.index]));
         },
@@ -360,8 +365,16 @@ static void eval(ByteCodeChunk& c, EvalState & state, Env & env, Value & v) {
         [&env](opcode::popWith op) {
             env = *env.up;
         },
-        // opcode::jmp
-        // opcode::jmpz
+        [&i](opcode::jmp op) {
+            i.jump(op.ip - sizeof(op) - 1);
+        },
+        [&stack, &state, &i](opcode::jmpz op) {
+            bool b = state.forceBool(*stack.top(), op.pos);
+            stack.pop();
+            if (!b) {
+                i.jump(op.ip - sizeof(op) - 1);
+            }
+        },
         [&stack, &state](opcode::binop<bOpEq> op) {
             Value* v1 = stack.top(); stack.pop();
             Value* v2 = stack.top(); stack.pop();
