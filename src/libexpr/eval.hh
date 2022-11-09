@@ -551,6 +551,7 @@ private:
     friend void prim_getAttr(EvalState & state, const PosIdx pos, Value * * args, Value & v);
     friend void prim_match(EvalState & state, const PosIdx pos, Value * * args, Value & v);
     friend void prim_split(EvalState & state, const PosIdx pos, Value * * args, Value & v);
+    friend std::optional<Value*> getAttrByPath(EvalState & state, Value* vAttrs, Env & env, const AttrPath & attrPath, PosIdx pos, std::function<std::optional<Value*>(Value*, Symbol)> notFound, PosIdx& pos2);
 
     friend struct Value;
 };

@@ -1,5 +1,6 @@
 #include "eval.hh"
 #include "hash.hh"
+#include "nixexpr.hh"
 #include "types.hh"
 #include "util.hh"
 #include "store-api.hh"
@@ -1418,6 +1419,24 @@ static std::string showAttrPath(EvalState & state, Env & env, const AttrPath & a
     return out.str();
 }
 
+std::optional<Value*> getAttrByPath(EvalState & state, Value* vAttrs, Env & env, const AttrPath & attrPath, PosIdx pos, std::function<std::optional<Value*>(Value*, Symbol)> notFound, PosIdx& pos2) {
+    for (auto & i : attrPath) {
+        state.nrLookups++;
+        Bindings::iterator j;
+        auto name = getName(i, state, env);
+        state.forceValue(*vAttrs, pos);
+        if (vAttrs->type() != nAttrs ||
+            (j = vAttrs->attrs->find(name)) == vAttrs->attrs->end())
+        {
+            return notFound(vAttrs, name);
+        } else {
+            vAttrs = j->value;
+        }
+        pos2 = j->pos;
+        if (state.countCalls) state.attrSelects[pos2]++;
+    }
+    return vAttrs;
+}
 
 void ExprSelect::eval(EvalState & state, Env & env, Value & v)
 {
@@ -1438,34 +1457,22 @@ void ExprSelect::eval(EvalState & state, Env & env, Value & v)
                 showAttrPath(state, env, attrPath))
             : nullptr;
 
-        for (auto & i : attrPath) {
-            state.nrLookups++;
-            Bindings::iterator j;
-            auto name = getName(i, state, env);
+        auto fallback = [&](Value* lastVal, Symbol name) -> std::optional<Value*> {
             if (def) {
-                state.forceValue(*vAttrs, pos);
-                if (vAttrs->type() != nAttrs ||
-                    (j = vAttrs->attrs->find(name)) == vAttrs->attrs->end())
-                {
-                    def->eval(state, env, v);
-                    return;
-                }
+                def->eval(state, env, v);
+                return {&v};
             } else {
-                state.forceAttrs(*vAttrs, pos);
-                if ((j = vAttrs->attrs->find(name)) == vAttrs->attrs->end()) {
-                    std::set<std::string> allAttrNames;
-                    for (auto & attr : *vAttrs->attrs)
-                        allAttrNames.insert(state.symbols[attr.name]);
-                    state.throwEvalError(
-                        pos,
-                        Suggestions::bestMatches(allAttrNames, state.symbols[name]),
-                        "attribute '%1%' missing", state.symbols[name], env, *this);
-                }
+                state.forceAttrs(*lastVal, pos);
+                std::set<std::string> allAttrNames;
+                for (auto & attr : *vAttrs->attrs)
+                    allAttrNames.insert(state.symbols[attr.name]);
+                state.throwEvalError(
+                    pos,
+                    Suggestions::bestMatches(allAttrNames, state.symbols[name]),
+                    "attribute '%1%' missing", state.symbols[name], env, *this);
             }
-            vAttrs = j->value;
-            pos2 = j->pos;
-            if (state.countCalls) state.attrSelects[pos2]++;
-        }
+        };
+        vAttrs = getAttrByPath(state, vAttrs, env, attrPath, pos, fallback, pos2).value();
 
         state.forceValue(*vAttrs, (pos2 ? pos2 : this->pos ) );
 
@@ -1480,29 +1487,15 @@ void ExprSelect::eval(EvalState & state, Env & env, Value & v)
     v = *vAttrs;
 }
 
-
 void ExprOpHasAttr::eval(EvalState & state, Env & env, Value & v)
 {
     Value vTmp;
-    Value * vAttrs = &vTmp;
 
+    PosIdx pos2;
     e->eval(state, env, vTmp);
-
-    for (auto & i : attrPath) {
-        state.forceValue(*vAttrs, noPos);
-        Bindings::iterator j;
-        auto name = getName(i, state, env);
-        if (vAttrs->type() != nAttrs ||
-            (j = vAttrs->attrs->find(name)) == vAttrs->attrs->end())
-        {
-            v.mkBool(false);
-            return;
-        } else {
-            vAttrs = j->value;
-        }
-    }
-
-    v.mkBool(true);
+    v.mkBool(getAttrByPath(state, &vTmp, env, attrPath, noPos, [&](auto, auto) -> std::optional<Value*> {
+        return {};
+    }, pos2).has_value());
 }
 
 

@@ -35,6 +35,7 @@ enum byteCodeT {
     bPopWith, bJmp, bDup, bThunk,
 };
 std::string showAttrPath(const SymbolTable & symbols, const AttrPath & attrPath);
+std::optional<Value*> getAttrByPath(EvalState & state, Value* vAttrs, Env & env, const AttrPath & attrPath, PosIdx pos, std::function<std::optional<Value*>(Value*, Symbol)> notFound, PosIdx& pos2);
 struct ThunkIdx { uint32_t idx; };
 
 namespace opcode {
@@ -428,8 +429,30 @@ static void eval(ByteCodeChunk& c, EvalState & state, Env & env, Value & v) {
             stack.push(state.allocValue());
             state.callFunction(*fun, op.arity, vArgs, *stack.top(), op.pos);
         },
-        // opcode::hasAttr
-        // opcode::select
+        [&stack, &c, &state, &env](opcode::hasAttr op) {
+            Value *vTmp = stack.top(); stack.pop();
+
+            const AttrPath *attrPath = c.attrPaths[op.attr];
+            PosIdx pos2;
+            state.forceValue(*vTmp, noPos);
+            stack.push(state.allocValue());
+            stack.top()->mkBool(getAttrByPath(state, vTmp, env, *attrPath, noPos, [&](auto, auto) -> std::optional<Value*> {
+                return {};
+            }, pos2).has_value());
+        },
+        [&stack, &c, &state, &env](opcode::select op) {
+            Value *vTmp = stack.top(); stack.pop();
+
+            const AttrPath *attrPath = c.attrPaths[op.attr];
+            PosIdx pos2;
+            state.forceValue(*vTmp, op.pos);
+            // todo default, better error
+            vTmp = getAttrByPath(state, vTmp, env, *attrPath, op.pos, [&](auto, auto name) -> std::optional<Value*> {
+                throw Error("attribute '%1%' missing, at %2%", state.symbols[name], pos2 || op.pos);
+            }, pos2).value();
+            state.forceValue(*vTmp, pos2 ? pos2 : op.pos);
+            stack.push(vTmp);
+        },
         [&c, &stack, &env, &state](opcode::thunk op) {
             Value* v = state.allocValue();
             Expr *e = new ExprCompiled(*c.thunks[op.ix.idx]);
@@ -459,8 +482,21 @@ static void eval(ByteCodeChunk& c, EvalState & state, Env & env, Value & v) {
             stack.push(state.allocValue());
             stack.top()->mkLambda(&env, l);
         },
-        // opcode::let
-        // opcode::letEnd
+        [&stack, &env, &state](opcode::let op) {
+            Value * attrs = stack.top(); stack.pop();
+            state.forceAttrs(*attrs, noPos);
+            Env & env2(state.allocEnv(attrs->attrs->size()));
+            env2.up = &env;
+            Displacement displ = 0;
+            // todo: thunks?
+            for (auto & i : *attrs->attrs) {
+                env2.values[displ++] = i.value;
+            }
+            env = env2;
+        },
+        [&env](opcode::letEnd op) {
+            env = *env.up;
+        },
         // opcode::concatStrings
         [&](auto t) {
             assert(false);
