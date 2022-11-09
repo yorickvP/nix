@@ -23,40 +23,18 @@ struct ByteCodeChunk {
     };
 };
 enum byteCodeT {
-    bLoadConst = 1, // u32 ix: Value& consts[ix] // +1
-    bLoadVar, // u32 pos, symbol name, u32 level, u32 displ // +1
-    bLoadWith, // u32 pos, symbol name, u32 level // +1
-    bSelect, // u32 pos, attrpath, expr default // -1+1
-    bHasAttr, // attrpath // -1+1
-    bAttrs,
-    bList, // uint32 length, // -n+1
-    bLambda, // u32 pos, name, arg, formals, body
-    bCall, // u32 pos, pop(1)(pop(nArgs))
-    bLet, // -1
-    bLetEnd, // 0
-    bWith, // u32 pos, u32 prevWith // -1+1
-    bJmpNot, // u32 pos, expr else // -1+1
-    bAssert, // u32 pos // -1+1
-    bNot, // -1+1
-    bOpEq, // -2+1
-    bOpNEq, // -2+1
-    bOpAnd, // -2+1
-    bOpOr, // -2+1
-    bOpImpl, // -2+1
-    bOpUpdate, // -2+1
-    bOpConcatList, // -2+1
-    bConcatStr, // u32 pos, b force, u32 nargs
-    bPos, // u32 pos
-    bPopWith,
-    bJmp, // u32 target
-    bDup,
-    bThunk, // u32 thunkNr
+    bLoadConst = 1,
+    bLoadVar, bLoadWith, bSelect,
+    bHasAttr, bAttrs, bList, bLambda,
+    bCall, bLet, bLetEnd, bPushWith,
+    bJmpz, bAssert, bNot, bOpEq,
+    bOpNEq, bOpAnd, bOpOr, bOpImpl,
+    bOpUpdate, bOpConcatList, bConcatStr, bPos,
+    bPopWith, bJmp, bDup, bThunk,
 };
 std::string showAttrPath(const SymbolTable & symbols, const AttrPath & attrPath);
-class ThunkIdx {
-public:
-    uint32_t idx;
-};
+struct ThunkIdx { uint32_t idx; };
+
 namespace opcode {
 #pragma pack(push, 1)
 struct loadconst {
@@ -95,7 +73,7 @@ struct loadwith {
     };
 };
 struct pushWith {
-    static const byteCodeT type = bWith;
+    static const byteCodeT type = bPushWith;
     PosIdx pos;
     uint16_t prevWith;
     std::ostream& repr(std::ostream& out, const SymbolTable& st, ByteCodeChunk& c) {
@@ -134,8 +112,8 @@ struct jmp {
     std::ostream& repr(std::ostream& out, const SymbolTable&, ByteCodeChunk&) {return out << "jmp " << ip;};
 };
 
-struct jmpNot {
-    static const byteCodeT type = bJmpNot;
+struct jmpz {
+    static const byteCodeT type = bJmpz;
     PosIdx pos;
     int32_t ip;
     std::ostream& repr(std::ostream& out, const SymbolTable&, ByteCodeChunk&) {return out << "jmpnot " << ip;};
@@ -269,10 +247,10 @@ void decode(ByteCodeChunk& c, Visitor v) {
         case bLoadVar: v(i.get<opcode::loadvar>()); break;
         case bLoadWith: v(i.get<opcode::loadwith>()); break;
         case bNot: v(i.get<opcode::not_>()); break;
-        case bWith: v(i.get<opcode::pushWith>()); break;
+        case bPushWith: v(i.get<opcode::pushWith>()); break;
         case bPopWith: v(i.get<opcode::popWith>()); break;
         case bJmp: v(i.get<opcode::jmp>()); break;
-        case bJmpNot: v(i.get<opcode::jmpNot>()); break;
+        case bJmpz: v(i.get<opcode::jmpz>()); break;
         case bOpEq: v(i.get<opcode::binop<bOpEq>>()); break;
         case bOpNEq: v(i.get<opcode::binop<bOpNEq>>()); break;
         case bOpAnd: v(i.get<opcode::binop<bOpAnd>>()); break;
@@ -383,7 +361,7 @@ static void eval(ByteCodeChunk& c, EvalState & state, Env & env, Value & v) {
             env = *env.up;
         },
         // opcode::jmp
-        // opcode::jmpNot
+        // opcode::jmpz
         [&stack, &state](opcode::binop<bOpEq> op) {
             Value* v1 = stack.top(); stack.pop();
             Value* v2 = stack.top(); stack.pop();
@@ -500,7 +478,7 @@ void ExprSelect::compile(ByteCodeChunkIterator& c) const {
     //     c.push(bHasAttr);
     //     c.push(attrPath);
     //     c.push(bNot);
-    //     c.push(bJmpNot);
+    //     c.push(bJmpz);
     //     pushPos(c, noPos);
     //     uint32_t afterIx = c.code.size();
     //     c.push((uint32_t)0);
@@ -588,10 +566,10 @@ void ExprWith::compile(ByteCodeChunkIterator&c) const {
 };
 void ExprIf::compile(ByteCodeChunkIterator&c) const {
     cond->compile(c);
-    ByteCodeChunkIterator elseJmp = c.put(opcode::jmpNot{pos});
+    ByteCodeChunkIterator elseJmp = c.put(opcode::jmpz{pos});
     then->compile(c);
     ByteCodeChunkIterator endJmp = c.put(opcode::jmp{});
-    elseJmp.setJmp<opcode::jmpNot>(c);
+    elseJmp.setJmp<opcode::jmpz>(c);
     else_->compile(c);
     endJmp.setJmp<opcode::jmp>(c);
 };
