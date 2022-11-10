@@ -25,11 +25,12 @@ enum byteCodeT {
     bLoadSymbol,
     bLoadVar, bLoadWith, bSelect,
     bHasAttr, bAttrs, bList, bLambda,
-    bCall, bLet, bLetEnd, bPushWith,
+    bReserveEnv,
+    bCall, bLet, bCloseEnv, bPushWith,
     bJmpz, bAssert, bNot, bOpEq,
     bOpNEq, bOpAnd, bOpOr, bOpImpl,
     bOpUpdate, bOpConcatList, bConcatStr, bPos,
-    bPopWith, bJmp, bDup, bThunk,
+    bJmp, bDup, bThunk,
 };
 std::string showAttrPath(const SymbolTable & symbols, const AttrPath & attrPath);
 std::optional<Value*> getAttrByPath(EvalState & state, Value* vAttrs, Env & env, const AttrPath & attrPath, PosIdx pos, std::function<std::optional<Value*>(Value*, Symbol)> notFound, PosIdx& pos2);
@@ -137,10 +138,6 @@ struct not_ {
     static const byteCodeT type = bNot;
     std::ostream& repr(std::ostream& out, const SymbolTable&, ByteCodeChunk&) {return out << "not";};
 };
-struct popWith {
-    static const byteCodeT type = bPopWith;
-    std::ostream& repr(std::ostream& out, const SymbolTable&, ByteCodeChunk&) {return out << "popwith";};
-};
 struct hasAttr {
     static const byteCodeT type = bHasAttr;
     uint32_t attrPathLen;
@@ -165,6 +162,7 @@ struct attrs {
     static const byteCodeT type = bAttrs;
     PosIdx pos;
     uint32_t count;
+    uint32_t recursive;
     std::ostream& repr(std::ostream& out, const SymbolTable&, ByteCodeChunk&) {return out << "attrs " << count;};
 };
 struct dup {
@@ -181,13 +179,19 @@ struct lambda {
         return out << "lambda " << st[arg] << " " << body.idx;
     };
 };
+struct reserveEnv {
+    static const byteCodeT type = bReserveEnv;
+    uint32_t size;
+    std::ostream& repr(std::ostream& out, const SymbolTable&, ByteCodeChunk&) {return out << "reserveEnv " << size;};
+};
 struct let {
     static const byteCodeT type = bLet;
-    std::ostream& repr(std::ostream& out, const SymbolTable&, ByteCodeChunk&) {return out << "let";};
+    uint32_t count;
+    std::ostream& repr(std::ostream& out, const SymbolTable&, ByteCodeChunk&) {return out << "let " << count;};
 };
-struct letEnd {
-    static const byteCodeT type = bLetEnd;
-    std::ostream& repr(std::ostream& out, const SymbolTable&, ByteCodeChunk&) {return out << "letend";};
+struct closeEnv {
+    static const byteCodeT type = bCloseEnv;
+    std::ostream& repr(std::ostream& out, const SymbolTable&, ByteCodeChunk&) {return out << "closeEnv";};
 };
 struct concatStrings {
     static const byteCodeT type = bConcatStr;
@@ -260,7 +264,6 @@ void decode(ByteCodeChunkIterator& i, Visitor v) {
         case bLoadWith: v(i.get<opcode::loadwith>()); break;
         case bNot: v(i.get<opcode::not_>()); break;
         case bPushWith: v(i.get<opcode::pushWith>()); break;
-        case bPopWith: v(i.get<opcode::popWith>()); break;
         case bJmp: v(i.get<opcode::jmp>()); break;
         case bJmpz: v(i.get<opcode::jmpz>()); break;
         case bOpEq: v(i.get<opcode::binop<bOpEq>>()); break;
@@ -279,8 +282,9 @@ void decode(ByteCodeChunkIterator& i, Visitor v) {
         case bAttrs: v(i.get<opcode::attrs>()); break;
         case bDup: v(i.get<opcode::dup>()); break;
         case bLambda: v(i.get<opcode::lambda>()); break;
+        case bReserveEnv: v(i.get<opcode::reserveEnv>()); break;
         case bLet: v(i.get<opcode::let>()); break;
-        case bLetEnd: v(i.get<opcode::letEnd>()); break;
+        case bCloseEnv: v(i.get<opcode::closeEnv>()); break;
         case bConcatStr: v(i.get<opcode::concatStrings>()); break;
         default:
             assert(false);
@@ -330,9 +334,10 @@ Expr* compileExpr(Expr* e) {
     e->compile(c);
     return new ExprCompiled(*toplevel);
 }
-static void eval(ByteCodeChunk& c, EvalState & state, Env & env, Value & v) {
+static void eval(ByteCodeChunk& c, EvalState & state, Env & topEnv, Value & v) {
     ByteCodeChunkIterator i(c);
     std::stack<Value*> stack;
+    Env * env = &topEnv;
     decode(i, match {
         [&stack, &c](opcode::loadconst op) {
             stack.push(const_cast<Value*>(c.consts[op.index]));
@@ -351,7 +356,7 @@ static void eval(ByteCodeChunk& c, EvalState & state, Env & env, Value & v) {
             stack.push(v);
         },
         [&env, &stack](opcode::loadvar op) {
-            Env *e = &env;
+            Env *e = env;
             for (auto l = op.level; l; --l, e = e->up) ;
             stack.push(e->values[op.displacement]);
         },
@@ -359,7 +364,7 @@ static void eval(ByteCodeChunk& c, EvalState & state, Env & env, Value & v) {
             ExprVar var(op.pos, op.name);
             var.fromWith = true;
             var.level = op.level;
-            stack.push(state.lookupVarWith(&env, var, false));
+            stack.push(state.lookupVarWith(env, var, false));
         },
         [&state, &stack](opcode::not_ op) {
             bool b = state.forceBool(*stack.top(), noPos);
@@ -367,15 +372,12 @@ static void eval(ByteCodeChunk& c, EvalState & state, Env & env, Value & v) {
         },
         [&env, &stack, &state](opcode::pushWith op) {
             Env & env2(state.allocEnv(1));
-            env2.up = &env;
+            env2.up = env;
             env2.prevWith = op.prevWith;
             env2.hasWith = true;
             env2.values[0] = stack.top();
             stack.pop();
-            env = env2;
-        },
-        [&env](opcode::popWith op) {
-            env = *env.up;
+            env = &env2;
         },
         [&i](opcode::jmp op) {
             i.jump(op.ip - sizeof(op) - 1);
@@ -451,11 +453,11 @@ static void eval(ByteCodeChunk& c, EvalState & state, Env & env, Value & v) {
             PosIdx pos2;
             state.forceValue(*vTmp, noPos);
             stack.push(state.allocValue());
-            stack.top()->mkBool(getAttrByPath(state, vTmp, env, attrPath, noPos, [&](auto, auto) -> std::optional<Value*> {
+            stack.top()->mkBool(getAttrByPath(state, vTmp, *env, attrPath, noPos, [&](auto, auto) -> std::optional<Value*> {
                 return {};
             }, pos2).has_value());
         },
-        [&stack, &c, &state, &env](opcode::select op) {
+        [&stack, &state, &env](opcode::select op) {
             AttrPath attrPath(op.attrPathLen, AttrName(nullptr));
             for (size_t i = 0; i < op.attrPathLen; i++) {
                 Value *v = stack.top(); stack.pop();
@@ -467,7 +469,7 @@ static void eval(ByteCodeChunk& c, EvalState & state, Env & env, Value & v) {
             PosIdx pos2;
             state.forceValue(*vTmp, op.pos);
             // todo default, better error
-            vTmp = getAttrByPath(state, vTmp, env, attrPath, op.pos, [&](auto, auto name) -> std::optional<Value*> {
+            vTmp = getAttrByPath(state, vTmp, *env, attrPath, op.pos, [&](auto, auto name) -> std::optional<Value*> {
                 throw Error("attribute '%1%' missing, at %2%", state.symbols[name], pos2 || op.pos);
             }, pos2).value();
             state.forceValue(*vTmp, pos2 ? pos2 : op.pos);
@@ -476,7 +478,7 @@ static void eval(ByteCodeChunk& c, EvalState & state, Env & env, Value & v) {
         [&c, &stack, &env, &state](opcode::thunk op) {
             Value* v = state.allocValue();
             Expr *e = new ExprCompiled(*c.thunks[op.ix.idx]);
-            v->mkThunk(&env, e);
+            v->mkThunk(env, e);
             stack.push(v);
         },
         [&](opcode::assert op) {
@@ -490,9 +492,11 @@ static void eval(ByteCodeChunk& c, EvalState & state, Env & env, Value & v) {
                     });
             }
         },
-        [&state, &stack](opcode::attrs op) {
+         [&state, &stack, &env](opcode::attrs op) {
             Value &v = *state.allocValue();
             auto builder = state.buildBindings(op.count);
+            // only the last `recCount` bindings are recursive
+            size_t recCount = op.recursive;
             for (size_t i = op.count; i > 0; i--) {
                 Value *v2 = stack.top(); stack.pop();
                 Value *v1 = stack.top(); stack.pop();
@@ -500,9 +504,12 @@ static void eval(ByteCodeChunk& c, EvalState & state, Env & env, Value & v) {
                 if (v1->type() == nNull) continue;
                 state.forceStringNoCtx(*v1);
                 builder.insert(state.symbols.create(v1->string.s), v2);
+                if (recCount)
+                    env->values[--recCount] = v2;
             }
             // todo: check for duplicates
             v.mkAttrs(builder);
+            if (op.recursive) env = env->up;
             stack.push(&v);
         },
         [&stack](opcode::dup op) {
@@ -514,22 +521,21 @@ static void eval(ByteCodeChunk& c, EvalState & state, Env & env, Value & v) {
             ExprLambda *l = new ExprLambda(op.pos, op.arg, nullptr, compiled);
             l->setName(op.name);
             stack.push(state.allocValue());
-            stack.top()->mkLambda(&env, l);
+            stack.top()->mkLambda(env, l);
         },
-        [&stack, &env, &state](opcode::let op) {
-            Value * attrs = stack.top(); stack.pop();
-            state.forceAttrs(*attrs, noPos);
-            Env & env2(state.allocEnv(attrs->attrs->size()));
-            env2.up = &env;
-            Displacement displ = 0;
-            // todo: thunks?
-            for (auto & i : *attrs->attrs) {
-                env2.values[displ++] = i.value;
+        [&env, &state](opcode::reserveEnv op) {
+            Env & env2(state.allocEnv(op.size));
+            env2.up = env;
+            env = &env2;
+        },
+        [&stack, &env](opcode::let op) {
+            for (size_t i = op.count; i > 0; i--) {
+                Value *v1 = stack.top(); stack.pop();
+                env->values[i - 1] = v1;
             }
-            env = env2;
         },
-        [&env](opcode::letEnd op) {
-            env = *env.up;
+        [&env](opcode::closeEnv op) {
+            env = env->up;
         },
         // opcode::concatStrings
         [&](auto t) {
@@ -602,25 +608,24 @@ void ExprOpHasAttr::compile(ByteCodeChunkIterator& c) const {
     c.put(opcode::hasAttr{(uint32_t)attrPath.size()});
 };
 void ExprAttrs::compile(ByteCodeChunkIterator& c) const {
+    if (recursive)
+        c.put(opcode::reserveEnv{(uint32_t)(attrs.size())});
     uint32_t cnt = 0;
+    // todo __overrides
     for (auto & i : dynamicAttrs) {
         // todo pos
         bmaybeThunk(c, i.nameExpr);
         bmaybeThunk(c, i.valueExpr);
         cnt++;
     }
-    if (recursive) {
-        // todo
-        assert(false);
-    } else {
-        for (auto & i : attrs) {
-            // todo pos
-            c.put(opcode::loadsymbol{i.first});
-            bmaybeThunk(c, i.second.e);
-            cnt++;
-        }
+    for (auto & i : attrs) {
+        // todo pos
+        // todo inherits
+        c.put(opcode::loadsymbol{i.first});
+        bmaybeThunk(c, i.second.e);
+        cnt++;
     }
-    c.put(opcode::attrs{pos, cnt});
+    c.put(opcode::attrs{pos, cnt, recursive ? (uint32_t)attrs.size() : 0});
 };
 void ExprList::compile(ByteCodeChunkIterator& c) const {
     uint32_t cnt = 0;
@@ -651,17 +656,24 @@ void ExprCall::compile(ByteCodeChunkIterator& c) const {
     c.put(opcode::call{pos, (uint8_t)cnt});
 };
 void ExprLet::compile(ByteCodeChunkIterator&c) const {
-    attrs->compile(c);
-    c.put(opcode::let{});
+    c.put(opcode::reserveEnv{(uint32_t)(attrs->attrs.size())});
+    uint32_t cnt = 0;
+    for (auto & i : attrs->attrs) {
+        // todo pos
+        // todo inherits
+        bmaybeThunk(c, i.second.e);
+        cnt++;
+    }
+    c.put(opcode::let{cnt});
     body->compile(c);
-    c.put(opcode::letEnd{});
+    c.put(opcode::closeEnv{});
 
 };
 void ExprWith::compile(ByteCodeChunkIterator&c) const {
     bmaybeThunk(c, attrs);
     c.put(opcode::pushWith{pos, (uint16_t)prevWith});
     body->compile(c);
-    c.put(opcode::popWith{});
+    c.put(opcode::closeEnv{});
 
 };
 void ExprIf::compile(ByteCodeChunkIterator&c) const {
