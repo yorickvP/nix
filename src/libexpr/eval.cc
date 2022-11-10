@@ -1464,7 +1464,7 @@ void ExprSelect::eval(EvalState & state, Env & env, Value & v)
             } else {
                 state.forceAttrs(*lastVal, pos);
                 std::set<std::string> allAttrNames;
-                for (auto & attr : *vAttrs->attrs)
+                for (auto & attr : *lastVal->attrs)
                     allAttrNames.insert(state.symbols[attr.name]);
                 state.throwEvalError(
                     pos,
