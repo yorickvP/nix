@@ -1,3 +1,4 @@
+#include "attr-set.hh"
 #include "eval.hh"
 #include "bytecode.hh"
 #include "nixexpr.hh"
@@ -489,7 +490,21 @@ static void eval(ByteCodeChunk& c, EvalState & state, Env & env, Value & v) {
                     });
             }
         },
-        // opcode::attrs
+        [&state, &stack](opcode::attrs op) {
+            Value &v = *state.allocValue();
+            auto builder = state.buildBindings(op.count);
+            for (size_t i = op.count; i > 0; i--) {
+                Value *v2 = stack.top(); stack.pop();
+                Value *v1 = stack.top(); stack.pop();
+                state.forceValue(*v1, noPos);
+                if (v1->type() == nNull) continue;
+                state.forceStringNoCtx(*v1);
+                builder.insert(state.symbols.create(v1->string.s), v2);
+            }
+            // todo: check for duplicates
+            v.mkAttrs(builder);
+            stack.push(&v);
+        },
         [&stack](opcode::dup op) {
             stack.push(stack.top());
         },
@@ -588,18 +603,20 @@ void ExprOpHasAttr::compile(ByteCodeChunkIterator& c) const {
 };
 void ExprAttrs::compile(ByteCodeChunkIterator& c) const {
     uint32_t cnt = 0;
+    for (auto & i : dynamicAttrs) {
+        // todo pos
+        bmaybeThunk(c, i.nameExpr);
+        bmaybeThunk(c, i.valueExpr);
+        cnt++;
+    }
     if (recursive) {
         // todo
         assert(false);
     } else {
         for (auto & i : attrs) {
-            // c.push(*reinterpret_cast<const uint32_t*>(&i.first));
-            // // todo thunk
-            // i.second.e->compile(c);
-            cnt++;
-        }
-        for (auto & i : dynamicAttrs) {
-            // todo
+            // todo pos
+            c.put(opcode::loadsymbol{i.first});
+            bmaybeThunk(c, i.second.e);
             cnt++;
         }
     }
