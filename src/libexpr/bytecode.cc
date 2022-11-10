@@ -10,7 +10,6 @@ namespace nix {
 struct ByteCodeChunk {
     std::vector<uint8_t> code;
     std::vector<const Value*> consts;
-    std::vector<const AttrPath*> attrPaths;
     std::vector<ByteCodeChunk*> thunks;
     ByteCodeChunk() = default;
     ByteCodeChunk(ByteCodeChunk &&) = delete;
@@ -19,13 +18,10 @@ struct ByteCodeChunk {
         consts.push_back(&v);
         return consts.size() - 1;
     };
-    uint32_t addAttrPath(const AttrPath &p) {
-        attrPaths.push_back(&p);
-        return attrPaths.size() - 1;
-    };
 };
 enum byteCodeT {
     bLoadConst = 1,
+    bLoadSymbol,
     bLoadVar, bLoadWith, bSelect,
     bHasAttr, bAttrs, bList, bLambda,
     bCall, bLet, bLetEnd, bPushWith,
@@ -46,6 +42,15 @@ struct loadconst {
     std::ostream& repr(std::ostream& out, const SymbolTable& st, ByteCodeChunk& c) {
         out << "loadconst ";
         c.consts[index]->print(st, out);
+        return out;
+    };
+};
+struct loadsymbol {
+    static const byteCodeT type = bLoadSymbol;
+    Symbol s;
+    std::ostream& repr(std::ostream& out, const SymbolTable& st, ByteCodeChunk& c) {
+        out << "loadsymbol ";
+        out << st[s];
         return out;
     };
 };
@@ -137,17 +142,17 @@ struct popWith {
 };
 struct hasAttr {
     static const byteCodeT type = bHasAttr;
-    uint32_t attr;
+    uint32_t attrPathLen;
     std::ostream& repr(std::ostream& out, const SymbolTable& st, ByteCodeChunk& c) {
-        return out << "hasattr " << showAttrPath(st, *c.attrPaths[attr]);
+        return out << "hasattr " << attrPathLen;
     };
 };
 struct select {
     static const byteCodeT type = bSelect;
     PosIdx pos;
-    uint32_t attr;
+    uint32_t attrPathLen;
     std::ostream& repr(std::ostream& out, const SymbolTable& st, ByteCodeChunk& c) {
-        return out << "select " << showAttrPath(st, *c.attrPaths[attr]);
+        return out << "select " << attrPathLen;
     };
 };
 struct assert {
@@ -248,6 +253,7 @@ void decode(ByteCodeChunkIterator& i, Visitor v) {
         byteCodeT code = (byteCodeT)i.get<uint8_t>();
         switch(code) {
         case bLoadConst: v(i.get<opcode::loadconst>()); break;
+        case bLoadSymbol: v(i.get<opcode::loadsymbol>()); break;
         case bList: v(i.get<opcode::list>()); break;
         case bLoadVar: v(i.get<opcode::loadvar>()); break;
         case bLoadWith: v(i.get<opcode::loadwith>()); break;
@@ -329,6 +335,10 @@ static void eval(ByteCodeChunk& c, EvalState & state, Env & env, Value & v) {
     decode(i, match {
         [&stack, &c](opcode::loadconst op) {
             stack.push(const_cast<Value*>(c.consts[op.index]));
+        },
+        [&state, &stack](opcode::loadsymbol op) {
+            stack.push(state.allocValue());
+            stack.top()->mkString(state.symbols[op.s]);
         },
         [&state, &stack](opcode::list op) {
             Value* v = state.allocValue();
@@ -429,25 +439,34 @@ static void eval(ByteCodeChunk& c, EvalState & state, Env & env, Value & v) {
             stack.push(state.allocValue());
             state.callFunction(*fun, op.arity, vArgs, *stack.top(), op.pos);
         },
-        [&stack, &c, &state, &env](opcode::hasAttr op) {
+        [&stack, &state, &env](opcode::hasAttr op) {
+            AttrPath attrPath(op.attrPathLen, AttrName(nullptr));
+            for (size_t i = 0; i < op.attrPathLen; i++) {
+                Value *v = stack.top(); stack.pop();
+                state.forceStringNoCtx(*v);
+                attrPath[op.attrPathLen - i - 1].symbol = state.symbols.create(v->string.s);
+            }
             Value *vTmp = stack.top(); stack.pop();
-
-            const AttrPath *attrPath = c.attrPaths[op.attr];
             PosIdx pos2;
             state.forceValue(*vTmp, noPos);
             stack.push(state.allocValue());
-            stack.top()->mkBool(getAttrByPath(state, vTmp, env, *attrPath, noPos, [&](auto, auto) -> std::optional<Value*> {
+            stack.top()->mkBool(getAttrByPath(state, vTmp, env, attrPath, noPos, [&](auto, auto) -> std::optional<Value*> {
                 return {};
             }, pos2).has_value());
         },
         [&stack, &c, &state, &env](opcode::select op) {
+            AttrPath attrPath(op.attrPathLen, AttrName(nullptr));
+            for (size_t i = 0; i < op.attrPathLen; i++) {
+                Value *v = stack.top(); stack.pop();
+                state.forceStringNoCtx(*v);
+                attrPath[op.attrPathLen - i - 1].symbol = state.symbols.create(v->string.s);
+            }
             Value *vTmp = stack.top(); stack.pop();
 
-            const AttrPath *attrPath = c.attrPaths[op.attr];
             PosIdx pos2;
             state.forceValue(*vTmp, op.pos);
             // todo default, better error
-            vTmp = getAttrByPath(state, vTmp, env, *attrPath, op.pos, [&](auto, auto name) -> std::optional<Value*> {
+            vTmp = getAttrByPath(state, vTmp, env, attrPath, op.pos, [&](auto, auto name) -> std::optional<Value*> {
                 throw Error("attribute '%1%' missing, at %2%", state.symbols[name], pos2 || op.pos);
             }, pos2).value();
             state.forceValue(*vTmp, pos2 ? pos2 : op.pos);
@@ -502,6 +521,7 @@ static void eval(ByteCodeChunk& c, EvalState & state, Env & env, Value & v) {
             assert(false);
         }
     });
+    assert(stack.size() == 1);
     v = *stack.top();
 }
 
@@ -519,9 +539,26 @@ void ExprVar::compile(ByteCodeChunkIterator& c) const {
         }
     });
 };
+static void bmaybeThunk(ByteCodeChunkIterator& c, const Expr* e) {
+    if (dynamic_cast<const ExprLiteral*>(e) != nullptr ||
+        dynamic_cast<const ExprVar*>(e) != nullptr) {
+        e->compile(c);
+    } else {
+        c.putThunk([e](ByteCodeChunkIterator& c) {
+            e->compile(c);
+        });
+    }
+}
 void ExprSelect::compile(ByteCodeChunkIterator& c) const {
     e->compile(c);
     assert(!def); // TODO
+    for (auto & i : attrPath) {
+        if (i.symbol) {
+            c.put(opcode::loadsymbol{i.symbol});
+        } else {
+            bmaybeThunk(c, i.expr);
+        }
+    }
     // if (def) {
     //     c.push(bDup);
     //     c.push(bHasAttr);
@@ -536,11 +573,18 @@ void ExprSelect::compile(ByteCodeChunkIterator& c) const {
     //     c.push((uint32_t)(c.code.size() + 9));
     //     c.set(afterIx, c.code.size());
     // }
-    c.put(opcode::select{pos, c.c.addAttrPath(attrPath)});
+    c.put(opcode::select{pos, (uint32_t)attrPath.size()});
 };
 void ExprOpHasAttr::compile(ByteCodeChunkIterator& c) const {
     e->compile(c);
-    c.put(opcode::hasAttr{c.c.addAttrPath(attrPath)});
+    for (auto & i : attrPath) {
+        if (i.symbol) {
+            c.put(opcode::loadsymbol{i.symbol});
+        } else {
+            bmaybeThunk(c, i.expr);
+        }
+    }
+    c.put(opcode::hasAttr{(uint32_t)attrPath.size()});
 };
 void ExprAttrs::compile(ByteCodeChunkIterator& c) const {
     uint32_t cnt = 0;
@@ -561,16 +605,6 @@ void ExprAttrs::compile(ByteCodeChunkIterator& c) const {
     }
     c.put(opcode::attrs{pos, cnt});
 };
-static void bmaybeThunk(ByteCodeChunkIterator& c, const Expr* e) {
-    if (dynamic_cast<const ExprLiteral*>(e) != nullptr ||
-        dynamic_cast<const ExprVar*>(e) != nullptr) {
-        e->compile(c);
-    } else {
-        c.putThunk([e](ByteCodeChunkIterator& c) {
-            e->compile(c);
-        });
-    }
-}
 void ExprList::compile(ByteCodeChunkIterator& c) const {
     uint32_t cnt = 0;
     for (auto i : elems) {
