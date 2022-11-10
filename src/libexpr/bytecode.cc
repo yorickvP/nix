@@ -5,6 +5,7 @@
 #include <functional>
 #include <stack>
 #include <iomanip>
+#include "util.hh"
 
 namespace nix {
 
@@ -545,7 +546,76 @@ static void eval(ByteCodeChunk& c, EvalState & state, Env & topEnv, Value & v) {
         [&env](opcode::closeEnv op) {
             env = env->up;
         },
-        // opcode::concatStrings
+        [&stack, &state](opcode::concatStrings op) {
+            bool first = !op.forceString;
+            ValueType firstType = nString;
+            PathSet context;
+            std::vector<BackedStringView> s;
+            NixInt n = 0; NixFloat nf = 0;
+            size_t sSize = 0;
+            for (size_t i = 0; i < op.count; i++) {
+                Value &vTmp = *stack.top(); stack.pop();
+                state.forceValue(vTmp, noPos);
+                if (first) firstType = vTmp.type();
+                switch (firstType) {
+                case nInt:
+                    switch (vTmp.type()) {
+                    case nInt: n += vTmp.integer; break;
+                    case nFloat:
+                        firstType = nFloat;
+                        nf = n;
+                        nf += vTmp.fpoint;
+                        break;
+                    default: throw Error("concatenation of strings with a non-numeric value");
+                    }
+                    break;
+                case nFloat:
+                    switch (vTmp.type()) {
+                    case nInt: nf += vTmp.integer; break;
+                    case nFloat: nf += vTmp.fpoint; break;
+                    default: throw Error("concatenation of strings with a non-numeric value");
+                    }
+                    break;
+                default: {
+                    if (s.empty()) s.reserve(op.count);
+                    /* skip canonization of first path, which would only be not
+                       canonized in the first place if it's coming from a ./${foo} type
+                       path */
+                    auto part = state.coerceToString(noPos, vTmp, context, false, firstType == nString, !first);
+                    sSize += part->size();
+                    s.emplace_back(std::move(part));
+                };
+                }
+                first = false;
+            }
+            Value &v = *state.allocValue();
+            stack.push(&v);
+            switch (firstType) {
+            case nInt: v.mkInt(n); break;
+            case nFloat: v.mkFloat(nf); break;
+            case nPath: {
+                if (!context.empty()) {
+                    throw Error("a string that refers to a store path cannot be appended to a path");
+                }
+
+                std::string result;
+                result.reserve(sSize);
+                for (const auto & part : s) result += *part;
+                v.mkPath(canonPath(result));
+                break;
+            }
+            default: {
+                char * result = (char*)GC_MALLOC_ATOMIC(sSize + 1);
+                char * tmp = result;
+                for (const auto & part : s) {
+                    memcpy(tmp, part->data(), part->size());
+                    tmp += part->size();
+                }
+                *tmp = 0;
+                v.mkStringMove(result, context);
+            };
+            }
+        },
         [&](auto t) {
             assert(false);
         }
@@ -728,8 +798,8 @@ void ExprOpConcatLists::compile(ByteCodeChunkIterator&c) const {
 };
 
 void ExprConcatStrings::compile(ByteCodeChunkIterator&c) const {
-    for (auto & i : *es) {
-        i.second->compile(c);
+    for (auto i = es->rbegin(); i != es->rend(); i++) {
+        (i->second)->compile(c);
     }
     // todo: save positions somewhere
     c.put(opcode::concatStrings{pos, forceString, (uint32_t)es->size()});
