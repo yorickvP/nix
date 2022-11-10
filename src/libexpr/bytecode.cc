@@ -149,8 +149,9 @@ struct select {
     static const byteCodeT type = bSelect;
     PosIdx pos;
     uint32_t attrPathLen;
+    int32_t ip;
     std::ostream& repr(std::ostream& out, const SymbolTable& st, ByteCodeChunk& c) {
-        return out << "select " << attrPathLen;
+        return out << "select " << attrPathLen << " " << ip;
     };
 };
 struct assert {
@@ -297,7 +298,7 @@ template <class... Ts> match(Ts...)->match<Ts...>;
 
 void decompile(const SymbolTable& st, ByteCodeChunk& c, std::ostream & str, std::string_view name, uint indent=0) {
     ByteCodeChunkIterator i(c);
-    str << std::string(indent, ' ') << name << " {" << std::endl;
+    str << std::string(indent, ' ') << name << " (" << c.code.size() << " bytes) {" << std::endl;
     indent += 2;
     size_t cnt = 0;
     for (auto& t : c.thunks) {
@@ -457,7 +458,7 @@ static void eval(ByteCodeChunk& c, EvalState & state, Env & topEnv, Value & v) {
                 return {};
             }, pos2).has_value());
         },
-        [&stack, &state, &env](opcode::select op) {
+        [&stack, &state, &env, &i](opcode::select op) {
             AttrPath attrPath(op.attrPathLen, AttrName(nullptr));
             for (size_t i = 0; i < op.attrPathLen; i++) {
                 Value *v = stack.top(); stack.pop();
@@ -469,11 +470,17 @@ static void eval(ByteCodeChunk& c, EvalState & state, Env & topEnv, Value & v) {
             PosIdx pos2;
             state.forceValue(*vTmp, op.pos);
             // todo default, better error
-            vTmp = getAttrByPath(state, vTmp, *env, attrPath, op.pos, [&](auto, auto name) -> std::optional<Value*> {
+            auto ret = getAttrByPath(state, vTmp, *env, attrPath, op.pos, [&](auto, auto name) -> std::optional<Value*> {
+                if (op.ip != 0) return {};
                 throw Error("attribute '%1%' missing, at %2%", state.symbols[name], pos2 || op.pos);
-            }, pos2).value();
-            state.forceValue(*vTmp, pos2 ? pos2 : op.pos);
-            stack.push(vTmp);
+            }, pos2);
+            if (ret.has_value()) {
+                vTmp = ret.value();
+                state.forceValue(*vTmp, pos2 ? pos2 : op.pos);
+                stack.push(vTmp);
+                // skip over default value
+                if (op.ip != 0) i.jump(op.ip - sizeof(op) - 1);
+            }
         },
         [&c, &stack, &env, &state](opcode::thunk op) {
             Value* v = state.allocValue();
@@ -508,6 +515,7 @@ static void eval(ByteCodeChunk& c, EvalState & state, Env & topEnv, Value & v) {
                     env->values[--recCount] = v2;
             }
             // todo: check for duplicates
+            // todo: __overrides
             v.mkAttrs(builder);
             if (op.recursive) env = env->up;
             stack.push(&v);
@@ -572,7 +580,6 @@ static void bmaybeThunk(ByteCodeChunkIterator& c, const Expr* e) {
 }
 void ExprSelect::compile(ByteCodeChunkIterator& c) const {
     e->compile(c);
-    assert(!def); // TODO
     for (auto & i : attrPath) {
         if (i.symbol) {
             c.put(opcode::loadsymbol{i.symbol});
@@ -580,21 +587,11 @@ void ExprSelect::compile(ByteCodeChunkIterator& c) const {
             bmaybeThunk(c, i.expr);
         }
     }
-    // if (def) {
-    //     c.push(bDup);
-    //     c.push(bHasAttr);
-    //     c.push(attrPath);
-    //     c.push(bNot);
-    //     c.push(bJmpz);
-    //     pushPos(c, noPos);
-    //     uint32_t afterIx = c.code.size();
-    //     c.push((uint32_t)0);
-    //     def->compile(c);
-    //     c.push(bJmp);
-    //     c.push((uint32_t)(c.code.size() + 9));
-    //     c.set(afterIx, c.code.size());
-    // }
-    c.put(opcode::select{pos, (uint32_t)attrPath.size()});
+    ByteCodeChunkIterator ifJmp = c.put(opcode::select{pos, (uint32_t)attrPath.size(), 0});
+    if (def) {
+        def->compile(c);
+        ifJmp.setJmp<opcode::select>(c);
+    }
 };
 void ExprOpHasAttr::compile(ByteCodeChunkIterator& c) const {
     e->compile(c);
@@ -611,7 +608,6 @@ void ExprAttrs::compile(ByteCodeChunkIterator& c) const {
     if (recursive)
         c.put(opcode::reserveEnv{(uint32_t)(attrs.size())});
     uint32_t cnt = 0;
-    // todo __overrides
     for (auto & i : dynamicAttrs) {
         // todo pos
         bmaybeThunk(c, i.nameExpr);
