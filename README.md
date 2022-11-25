@@ -21,7 +21,8 @@ Information on additional installation methods is available on the [Nix download
 ## Building And Developing
 
 See our [Hacking guide](https://nixos.org/manual/nix/stable/contributing/hacking.html) in our manual for instruction on how to
-build nix from source with nix-build or how to get a development environment.
+build nix from source with nix-build or how to get a development environment. The latest version is also available
+[in this repo](./doc/manual/src/contributing/hacking.md).
 
 ## Additional Resources
 

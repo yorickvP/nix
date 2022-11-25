@@ -1,5 +1,8 @@
 # Hacking
 
+## Flakes
+This section assumes you are using flakes-enabled nix. See the next section for equivalent instructions without the use of flakes.
+
 This section provides some notes on how to hack on Nix. To get the
 latest version of Nix from GitHub:
 
@@ -8,47 +11,18 @@ $ git clone https://github.com/NixOS/nix.git
 $ cd nix
 ```
 
-To build Nix for the current operating system/architecture use
-
-```console
-$ nix-build
-```
-
-or if you have a flake-enabled nix:
-
-```console
-$ nix build
-```
-
-This will build `defaultPackage` attribute defined in the `flake.nix`
-file. To build for other platforms add one of the following suffixes to
-it: aarch64-linux, i686-linux, x86\_64-darwin, x86\_64-linux. i.e.
-
-```console
-$ nix-build -A defaultPackage.x86_64-linux
-```
-
 To build all dependencies and start a shell in which all environment
 variables are set up so that those dependencies can be found:
-
-```console
-$ nix-shell
-```
-
-or if you have a flake-enabled nix:
 
 ```console
 $ nix develop
 ```
 
+This shell also adds `./outputs/bin/nix` to your `$PATH` so you can test
+the built nix in it.
+
 To get a shell with a different compilation environment (e.g. stdenv,
 gccStdenv, clangStdenv, clang11Stdenv, ccacheStdenv):
-
-```console
-$ nix-shell -A devShells.x86_64-linux.clang11StdenvPackages
-```
-
-or if you have a flake-enabled nix:
 
 ```console
 $ nix develop .#clang11StdenvPackages
@@ -70,20 +44,81 @@ To install it in `$(pwd)/outputs` and test it:
 ```console
 [nix-shell]$ make install
 [nix-shell]$ make installcheck -j $NIX_BUILD_CORES
-[nix-shell]$ ./outputs/out/bin/nix --version
-nix (Nix) 3.0
+[nix-shell]$ nix --version
+nix (Nix) 2.12
 ```
 
-If you have a flakes-enabled Nix you can replace:
+To build Nix for the current operating system/architecture use
+
+```console
+$ nix build
+```
+
+This will build `packages.x86_64-linux.default` attribute defined in the `flake.nix`
+file. To build for other platforms add one of the following suffixes to
+it: aarch64-linux, i686-linux, x86\_64-darwin, x86\_64-linux. i.e.
+
+```console
+$ nix build .#packages.x86_64-linux.default
+```
+
+## Stable CLI
+This section targets non-flakes nix users.
+
+This section provides some notes on how to hack on Nix. To get the
+latest version of Nix from GitHub:
+
+```console
+$ git clone https://github.com/NixOS/nix.git
+$ cd nix
+```
+
+To build all dependencies and start a shell in which all environment
+variables are set up so that those dependencies can be found:
 
 ```console
 $ nix-shell
 ```
 
-by:
+To get a shell with a different compilation environment (e.g. stdenv,
+gccStdenv, clangStdenv, clang11Stdenv, ccacheStdenv):
 
 ```console
-$ nix develop
+$ nix-shell -A devShells.x86_64-linux.clang11StdenvPackages
+```
+
+Note: you can use `ccacheStdenv` to drastically improve rebuild
+time. By default, ccache keeps artifacts in `~/.cache/ccache/`.
+
+To build Nix itself in this shell:
+
+```console
+[nix-shell]$ ./bootstrap.sh
+[nix-shell]$ ./configure $configureFlags --prefix=$(pwd)/outputs/out
+[nix-shell]$ make -j $NIX_BUILD_CORES
+```
+
+To install it in `$(pwd)/outputs` and test it:
+
+```console
+[nix-shell]$ make install
+[nix-shell]$ make installcheck -j $NIX_BUILD_CORES
+[nix-shell]$ ./outputs/out/bin/nix --version
+nix (Nix) 2.12
+```
+
+To build Nix for the current operating system/architecture use
+
+```console
+$ nix-build
+```
+
+This will build `packages.x86_64-linux.default` attribute defined in the `flake.nix`
+file. To build for other platforms add one of the following suffixes to
+it: aarch64-linux, i686-linux, x86\_64-darwin, x86\_64-linux. i.e.
+
+```console
+$ nix-build -A packages.x86_64-linux.default
 ```
 
 ## Running tests
