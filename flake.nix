@@ -687,7 +687,7 @@
 
             outputs = [ "out" "dev" "doc" ];
 
-            nativeBuildInputs = nativeBuildDeps;
+            nativeBuildInputs = nativeBuildDeps ++ [ clang-tools bear ];
             buildInputs = buildDeps ++ propagatedDeps ++ awsDeps;
 
             inherit configureFlags;
