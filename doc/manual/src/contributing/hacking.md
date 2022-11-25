@@ -121,6 +121,12 @@ it: aarch64-linux, i686-linux, x86\_64-darwin, x86\_64-linux. i.e.
 $ nix-build -A packages.x86_64-linux.default
 ```
 
+## Developing
+`clangd` and `bear` are installed by default in the `devShell`. To use LSP with your editor, after running the above `configure` steps,
+run `make clean && bear -- make -j$NIX_BUILD_CORES install` to generate the neccesary `compile_commands.json` file.
+
+Configure your editor to use the `clangd` from the shell, for example using [nix-direnv](https://github.com/nix-community/nix-direnv) and [envrc](https://github.com/purcell/envrc) for emacs.
+
 ## Running tests
 
 ### Unit-tests
