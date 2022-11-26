@@ -1,7 +1,8 @@
+#define _XOPEN_SOURCE // fix ucontext.h on apple
 #include <unistd.h>          // for _exit, write
 #include <signal.h>          // for sigaction, sigfillset, stack_t, siginfo_t
-#include <ucontext.h>        // for REG_RSP, ucontext_t, greg_t, mcontext_t
 #include <boost/format.hpp>  // for basic_altstringbuf<>::int_type, basic_al...
+#include <ucontext.h>        // for REG_RSP, ucontext_t, greg_t, mcontext_t
 #include <cstring>           // for strlen
 #include <cstddef>           // for ptrdiff_t
 #include <cstdlib>           // for abort

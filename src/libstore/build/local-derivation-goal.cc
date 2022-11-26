@@ -13,7 +13,6 @@
 #include <stdlib.h>                  // for posix_openpt, ptsname, unlockpt
 #include <string.h>                  // for strcmp, strcpy
 #include <sys/stat.h>                // for stat, chmod, mkdir, S_ISDIR, lstat
-#include <syscall.h>                 // for SYS_pivot_root
 #include <time.h>                    // for time
 #include <nlohmann/json.hpp>         // for basic_json, json, basic_json<>::...
 #include <boost/format.hpp>          // for basic_altstringbuf<>::int_type
@@ -78,6 +77,7 @@
 #if HAVE_SECCOMP
 #include <seccomp.h>                 // for seccomp_arch_add, seccomp_rule_add
 #endif
+#include <syscall.h>                 // for SYS_pivot_root
 #define pivot_root(new_root, put_old) (syscall(SYS_pivot_root, new_root, put_old))
 #endif
 

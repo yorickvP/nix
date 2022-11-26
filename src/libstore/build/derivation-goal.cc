@@ -4,7 +4,6 @@
 #include <errno.h>                   // for EPIPE
 #include <stdlib.h>                  // for random, WEXITSTATUS, WIFEXITED
 #include <sys/stat.h>                // for stat, chmod, S_IWUSR, uid_t, S_I...
-#include <syscall.h>                 // for SYS_pivot_root
 #include <time.h>                    // for time
 #include <boost/format.hpp>          // for basic_altstringbuf<>::int_type
 #include <fstream>                   // for basic_ostream, fstream, operator<<
@@ -35,6 +34,7 @@
 
 /* Includes required for chroot support. */
 #if __linux__
+#include <syscall.h>                 // for SYS_pivot_root
 #define pivot_root(new_root, put_old) (syscall(SYS_pivot_root, new_root, put_old))
 #endif
 
