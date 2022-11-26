@@ -1,6 +1,10 @@
-#include "command.hh"
-#include "shared.hh"
-#include "store-api.hh"
+#include <optional>      // for optional
+#include <string>        // for string, basic_string, allocator
+
+#include "command.hh"    // for registerCommand2, StoreCommand
+#include "store-api.hh"  // for Store
+#include "logging.hh"    // for Logger, notice
+#include "ref.hh"        // for ref, nix
 
 using namespace nix;
 

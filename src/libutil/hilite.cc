@@ -1,3 +1,6 @@
+#include <sys/types.h>  // for ssize_t, size_t
+#include <algorithm>    // for sort
+
 #include "hilite.hh"
 
 namespace nix {

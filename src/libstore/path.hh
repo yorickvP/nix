@@ -1,11 +1,18 @@
 #pragma once
 
-#include "content-address.hh"
-#include "types.hh"
+#include <cstddef>             // for size_t
+#include <map>                 // for map, map<>::value_compare
+#include <optional>            // for optional
+#include <set>                 // for set
+#include <string>              // for string, allocator, operator!=, operator<
+#include <string_view>         // for string_view
+#include <variant>             // for hash
+#include <vector>              // for vector
+
+#include "content-address.hh"  // for ContentAddress
 
 namespace nix {
 
-class Store;
 struct Hash;
 
 class StorePath

@@ -1,7 +1,14 @@
-#include "attrs.hh"
-#include "fetchers.hh"
+#include <nlohmann/json.hpp>  // for basic_json<>::object_t, basic_json, ite...
+#include <stdlib.h>           // for abort
+#include <boost/format.hpp>   // for basic_altstringbuf<>::int_type, basic_a...
+#include <cstdint>            // for uint64_t
+#include <type_traits>        // for remove_reference<>::type
+#include <utility>            // for pair
 
-#include <nlohmann/json.hpp>
+#include "attrs.hh"
+#include "error.hh"           // for Error
+#include "fmt.hh"             // for fmt
+#include "types.hh"           // for Explicit
 
 namespace nix::fetchers {
 

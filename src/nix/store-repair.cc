@@ -1,5 +1,10 @@
-#include "command.hh"
-#include "store-api.hh"
+#include <string>        // for string, basic_string, allocator
+#include <vector>        // for vector
+
+#include "command.hh"    // for registerCommand2, StorePathsCommand
+#include "store-api.hh"  // for Store
+#include "path.hh"       // for StorePath
+#include "ref.hh"        // for ref, nix
 
 using namespace nix;
 

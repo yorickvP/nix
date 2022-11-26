@@ -1,6 +1,9 @@
-#include "args.hh"
+#include <utility>   // for move
+
 #include "content-address.hh"
-#include "split.hh"
+#include "split.hh"  // for splitPrefixTo, splitPrefix
+#include "error.hh"  // for Error, UsageError
+#include "util.hh"   // for overloaded
 
 namespace nix {
 

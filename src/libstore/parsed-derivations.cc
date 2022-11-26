@@ -1,8 +1,26 @@
-#include "parsed-derivations.hh"
+#include <nlohmann/json.hpp>  // for basic_json, basic_json<>::object_t, ite...
+#include <boost/format.hpp>   // for basic_altstringbuf<>::int_type, basic_a...
+#include <regex>              // for regex_match, match_results<>::_Base_type
+#include <cmath>              // for ceil
+#include <exception>          // for exception
+#include <initializer_list>   // for initializer_list
+#include <list>               // for list, operator!=, _List_iterator, _List...
+#include <ostream>            // for ostringstream
+#include <set>                // for operator!=, operator==, _Rb_tree_iterator
+#include <string_view>        // for string_view
+#include <type_traits>        // for remove_cv<>::type
+#include <utility>            // for pair
+#include <vector>             // for vector
 
-#include <nlohmann/json.hpp>
-#include <regex>
-#include "json.hh"
+#include "parsed-derivations.hh"
+#include "json.hh"            // for JSONPlaceholder
+#include "config.hh"          // for Setting
+#include "derivations.hh"     // for BasicDerivation, DerivationOutputs, has...
+#include "error.hh"           // for Error
+#include "fmt.hh"             // for fmt
+#include "globals.hh"         // for Settings, settings, MaxBuildJobsSetting
+#include "store-api.hh"       // for Store
+#include "util.hh"            // for shellEscape, tokenizeString
 
 namespace nix {
 

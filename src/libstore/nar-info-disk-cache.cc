@@ -1,10 +1,27 @@
-#include "nar-info-disk-cache.hh"
-#include "sync.hh"
-#include "sqlite.hh"
-#include "globals.hh"
+#include <sqlite3.h>           // for sqlite3_changes, sqlite3_last_insert_r...
+#include <nlohmann/json.hpp>   // for basic_json, basic_json<>::object_t, json
+#include <assert.h>            // for assert
+#include <stdlib.h>            // for abort
+#include <time.h>              // for time
+#include <initializer_list>    // for initializer_list
+#include <list>                // for operator!=, list, _List_iterator, _Lis...
+#include <map>                 // for map, operator==, _Rb_tree_iterator<>::...
+#include <set>                 // for set
+#include <vector>              // for max, vector
 
-#include <sqlite3.h>
-#include <nlohmann/json.hpp>
+#include "nar-info-disk-cache.hh"
+#include "sync.hh"             // for Sync<>::Lock, Sync
+#include "sqlite.hh"           // for SQLiteStmt::Use, SQLite, SQLiteStmt
+#include "globals.hh"          // for Settings, settings
+#include "config.hh"           // for Setting
+#include "content-address.hh"  // for parseContentAddressOpt, renderContentA...
+#include "hash.hh"             // for Hash, Base32
+#include "logging.hh"          // for Logger, debug
+#include "nar-info.hh"         // for NarInfo
+#include "path-info.hh"        // for ValidPathInfo
+#include "path.hh"             // for StorePath, StorePathSet
+#include "realisation.hh"      // for Realisation, DrvOutput
+#include "util.hh"             // for concatStringsSep, tokenizeString, crea...
 
 namespace nix {
 

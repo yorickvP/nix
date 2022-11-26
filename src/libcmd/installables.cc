@@ -1,25 +1,40 @@
-#include "globals.hh"
+#include <assert.h>                  // for assert
+#include <stddef.h>                  // for size_t
+#include <boost/format.hpp>          // for basic_altstringbuf<>::int_type
+#include <algorithm>                 // for lexicographical_compare
+#include <exception>                 // for current_exception, exception_ptr
+#include <functional>                // for reference_wrapper, cref
+#include <map>                       // for map, map<>::mapped_type
+#include <variant>                   // for get_if, visit, operator<
+
+#include "globals.hh"                // for Settings, settings
 #include "installables.hh"
-#include "util.hh"
-#include "command.hh"
-#include "attr-path.hh"
-#include "common-eval-args.hh"
-#include "derivations.hh"
-#include "eval-inline.hh"
-#include "eval.hh"
-#include "get-drvs.hh"
-#include "store-api.hh"
-#include "shared.hh"
-#include "flake/flake.hh"
-#include "eval-cache.hh"
-#include "url.hh"
-#include "registry.hh"
-#include "build-result.hh"
-
-#include <regex>
-#include <queue>
-
-#include <nlohmann/json.hpp>
+#include "util.hh"                   // for absPath, hasPrefix, get, expandT...
+#include "command.hh"                // for SourceExprCommand, MixFlakeOptions
+#include "attr-path.hh"              // for parseAttrPath, findAlongAttrPath
+#include "common-eval-args.hh"       // for lookupFileArg
+#include "derivations.hh"            // for Derivation, DerivationOutputsAnd...
+#include "eval-inline.hh"            // for EvalState::allocValue, EvalState...
+#include "eval.hh"                   // for EvalState, EvalSettings, evalSet...
+#include "get-drvs.hh"               // for DrvInfos, getDerivations, DrvInfo
+#include "store-api.hh"              // for Store, BuildMode, BadStorePath
+#include "shared.hh"                 // for printMissing
+#include "flake/flake.hh"            // for LockedFlake, LockFlags, lockFlake
+#include "eval-cache.hh"             // for AttrCursor, EvalCache
+#include "registry.hh"               // for overrideRegistry, getRegistries
+#include "build-result.hh"           // for BuildResult
+#include "args.hh"                   // for Completions, completions, comple...
+#include "attr-set.hh"               // for Bindings, Attr
+#include "config.hh"                 // for Setting
+#include "experimental-features.hh"  // for Xp
+#include "fetchers.hh"               // for Input
+#include "flake/lockfile.hh"         // for InputPath, parseInputPath, LockFile
+#include "fmt.hh"                    // for fmt
+#include "hash.hh"                   // for Hash
+#include "logging.hh"                // for warn, Logger, debug, Activity
+#include "realisation.hh"            // for DrvOutput, DrvOutputs, Realisation
+#include "suggestions.hh"            // for OrSuggestions, Suggestions
+#include "symbol-table.hh"           // for SymbolStr, SymbolTable
 
 namespace nix {
 

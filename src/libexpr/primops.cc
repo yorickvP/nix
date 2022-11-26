@@ -1,30 +1,60 @@
-#include "archive.hh"
-#include "derivations.hh"
-#include "eval-inline.hh"
-#include "eval.hh"
-#include "globals.hh"
-#include "json-to-value.hh"
-#include "names.hh"
-#include "references.hh"
-#include "store-api.hh"
-#include "util.hh"
-#include "json.hh"
-#include "value-to-json.hh"
-#include "value-to-xml.hh"
+#include <boost/container/small_vector.hpp>  // for small_vector
+#include <sys/stat.h>                        // for stat, S_ISDIR, S_ISLNK
+#include <dlfcn.h>                           // for dlerror, dlopen, dlsym
+#include <assert.h>                          // for assert
+#include <dirent.h>                          // for DT_DIR, DT_LNK, DT_REG
+#include <gc/gc_allocator.h>                 // for gc_allocator
+#include <stdlib.h>                          // for abort
+#include <time.h>                            // for time
+#include <boost/container/vector.hpp>        // for operator+, operator-
+#include <boost/format.hpp>                  // for basic_altstringbuf<>::in...
+#include <algorithm>                         // for sort, min, set_difference
+#include <cstring>                           // for memcpy, strcmp
+#include <regex>                             // for regex_iterator, regex
+#include <cmath>                             // for ceil, floor
+#include <iterator>                          // for back_insert_iterator
+#include <limits>                            // for numeric_limits
+#include <list>                              // for operator!=, list, _List_...
+#include <map>                               // for operator!=, _Rb_tree_con...
+#include <memory>                            // for unique_ptr, __shared_ptr...
+#include <set>                               // for set, set<>::iterator
+#include <sstream>                           // for ostringstream, basic_str...
+#include <string_view>                       // for string_view, basic_strin...
+#include <type_traits>                       // for remove_reference<>::type
+#include <unordered_map>                     // for unordered_map, _Node_ite...
+#include <utility>                           // for pair, move
+
+#include "derivations.hh"                    // for Derivation, DerivationOu...
+#include "eval-inline.hh"                    // for EvalState::forceValue
+#include "eval.hh"                           // for EvalState, showType, Eva...
+#include "globals.hh"                        // for Settings, settings, nixV...
+#include "json-to-value.hh"                  // for JSONParseError, parseJSON
+#include "names.hh"                          // for DrvName, compareVersions
+#include "references.hh"                     // for PathRefScanSink
+#include "store-api.hh"                      // for Store
+#include "util.hh"                           // for baseNameOf, enumerate
+#include "json.hh"                           // for JSONObject
+#include "value-to-json.hh"                  // for printValueAsJSON
+#include "value-to-xml.hh"                   // for printValueAsXML
 #include "primops.hh"
-
-#include <boost/container/small_vector.hpp>
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-
-#include <algorithm>
-#include <cstring>
-#include <regex>
-#include <dlfcn.h>
-
-#include <cmath>
+#include "derived-path.hh"                   // for DerivedPath, DerivedPath...
+#include "attr-set.hh"                       // for Attr, Bindings, Bindings...
+#include "config.hh"                         // for Setting
+#include "content-address.hh"                // for FileIngestionMethod, Fil...
+#include "error.hh"                          // for ErrPos, Trace, Error
+#include "fmt.hh"                            // for hintfmt, hintformat
+#include "hash.hh"                           // for Hash, HashType, newHashA...
+#include "logging.hh"                        // for Logger, printError, prin...
+#include "nixexpr.hh"                        // for PosIdx, PosTable, Pos
+#include "path-info.hh"                      // for ValidPathInfo
+#include "path.hh"                           // for StorePath, StorePathSet
+#include "ref.hh"                            // for ref
+#include "serialise.hh"                      // for operator<<, Sink
+#include "suggestions.hh"                    // for Suggestion
+#include "symbol-table.hh"                   // for Symbol, SymbolTable, Sym...
+#include "sync.hh"                           // for Sync, Sync<>::Lock
+#include "types.hh"                          // for PathSet, Path, StringSet
+#include "value.hh"                          // for Value, Value::(anonymous)
 
 
 namespace nix {
@@ -194,6 +224,7 @@ static void import(EvalState & state, const PosIdx pos, Value & vPath, Value * v
             state.vImportedDrvToDerivation = allocRootValue(state.allocValue());
             state.eval(state.parseExprFromString(
                 #include "imported-drv-to-derivation.nix.gen.hh"
+
                 , "/"), **state.vImportedDrvToDerivation);
         }
 
@@ -205,6 +236,7 @@ static void import(EvalState & state, const PosIdx pos, Value & vPath, Value * v
     else if (path == corepkgsPrefix + "fetchurl.nix") {
         state.eval(state.parseExprFromString(
             #include "fetchurl.nix.gen.hh"
+
             , "/"), v);
     }
 
@@ -4010,6 +4042,7 @@ void EvalState::createBaseEnv()
        building baseEnv/staticBaseEnv because it uses 'builtins'. */
     char code[] =
         #include "primops/derivation.nix.gen.hh"
+
         // the parser needs two NUL bytes as terminators; one of them
         // is implied by being a C string.
         "\0";

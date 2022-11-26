@@ -1,28 +1,52 @@
-#include <cstring>
-#include <fstream>
-#include <iostream>
-#include <filesystem>
-#include <regex>
-#include <sstream>
-#include <vector>
-#include <map>
+#include <nlohmann/json.hpp>         // for basic_json, basic_json<>::string_t
+#include <assert.h>                  // for assert
+#include <stdint.h>                  // for uint64_t
+#include <stdlib.h>                  // for getenv, size_t, setenv
+#include <unistd.h>                  // for isatty, execvp, STDERR_FILENO
+#include <boost/format.hpp>          // for basic_altstringbuf<>::int_type
+#include <iostream>                  // for operator<<, ostringstream, basic...
+#include <regex>                     // for regex_search, match_results<>::_...
+#include <sstream>                   // for basic_stringbuf<>::int_type, bas...
+#include <vector>                    // for vector, max
+#include <map>                       // for map, operator!=, map<>::mapped_type
+#include <algorithm>                 // for all_of
+#include <functional>                // for function
+#include <list>                      // for _List_iterator, operator!=, _Lis...
+#include <memory>                    // for allocator, unique_ptr, shared_ptr
+#include <optional>                  // for optional
+#include <set>                       // for set
+#include <string>                    // for basic_string, string, operator==
+#include <utility>                   // for pair, move, tuple_element<>::type
 
-#include <nlohmann/json.hpp>
-
-#include "parsed-derivations.hh"
-#include "store-api.hh"
-#include "local-fs-store.hh"
-#include "globals.hh"
-#include "derivations.hh"
-#include "util.hh"
-#include "shared.hh"
-#include "path-with-outputs.hh"
-#include "eval.hh"
-#include "eval-inline.hh"
-#include "get-drvs.hh"
-#include "common-eval-args.hh"
-#include "attr-path.hh"
-#include "legacy.hh"
+#include "parsed-derivations.hh"     // for writeStructuredAttrsShell, Parse...
+#include "store-api.hh"              // for Store, openStore, BuildMode, bmC...
+#include "local-fs-store.hh"         // for LocalFSStore
+#include "globals.hh"                // for Settings, settings
+#include "derivations.hh"            // for Derivation, DerivationInputs
+#include "util.hh"                   // for shellEscape, absPath, getEnv
+#include "shared.hh"                 // for getArg, LegacyArgs, printMissing
+#include "path-with-outputs.hh"      // for parsePathWithOutputs
+#include "eval.hh"                   // for EvalState, resolveExprPath
+#include "eval-inline.hh"            // for EvalState::forceValue
+#include "get-drvs.hh"               // for DrvInfos, DrvInfo, getDerivation
+#include "common-eval-args.hh"       // for lookupFileArg, MixEvalArgs
+#include "attr-path.hh"              // for findAlongAttrPath
+#include "legacy.hh"                 // for MainFunction, RegisterLegacyCommand
+#include "attr-set.hh"               // for Bindings, BindingsBuilder
+#include "config.hh"                 // for Setting
+#include "derived-path.hh"           // for DerivedPath, DerivedPath::Built
+#include "error.hh"                  // for Error, UsageError, SysError
+#include "experimental-features.hh"  // for Xp
+#include "fmt.hh"                    // for fmt, format
+#include "logging.hh"                // for Logger, logger, logError, notice
+#include "nixexpr.hh"                // for Expr (ptr only), Formals::Formals_
+#include "path.hh"                   // for StorePath, StorePathSet
+#include "realisation.hh"            // for RealisedPath::Set, RealisedPath
+#include "ref.hh"                    // for ref, nix
+#include "repair-flag.hh"            // for RepairFlag, NoRepair, Repair
+#include "symbol-table.hh"           // for SymbolStr, SymbolTable
+#include "types.hh"                  // for Strings, Path, StringSet, String...
+#include "value.hh"                  // for Value, Value::(anonymous union):...
 
 using namespace nix;
 using namespace std::string_literals;

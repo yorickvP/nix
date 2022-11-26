@@ -1,12 +1,38 @@
+#include <assert.h>                  // for assert
+#include <boost/format.hpp>          // for basic_altstringbuf<>::int_type
+#include <cstdint>                   // for uint64_t
+#include <ctime>                     // for time_t
+#include <functional>                // for function
+#include <tuple>                     // for tuple
+#include <type_traits>               // for remove_reference<>::type, add_co...
+#include <utility>                   // for pair, move
+#include <algorithm>                 // for equal
+
 #include "flake.hh"
-#include "eval.hh"
-#include "lockfile.hh"
-#include "primops.hh"
-#include "eval-inline.hh"
-#include "store-api.hh"
-#include "fetchers.hh"
-#include "finally.hh"
-#include "fetch-settings.hh"
+#include "eval.hh"                   // for EvalState, showType, EvalSettings
+#include "lockfile.hh"               // for InputPath, Node::Edge, LockedNode
+#include "primops.hh"                // for RegisterPrimOp
+#include "eval-inline.hh"            // for EvalState::allocValue, EvalState...
+#include "store-api.hh"              // for Store
+#include "fetchers.hh"               // for Tree, Input
+#include "finally.hh"                // for Finally
+#include "fetch-settings.hh"         // for FetchSettings, fetchSettings
+#include "attr-set.hh"               // for Attr, Bindings
+#include "attrs.hh"                  // for Attrs
+#include "config.hh"                 // for Setting
+#include "error.hh"                  // for Error, ErrPos, foFile
+#include "experimental-features.hh"  // for ExperimentalFeature, Xp
+#include "flake/flakeref.hh"         // for FlakeId, FlakeRef, parseFlakeRef
+#include "fmt.hh"                    // for fmt, hintfmt
+#include "globals.hh"                // for Settings, settings
+#include "logging.hh"                // for warn, Logger, debug
+#include "nixexpr.hh"                // for PosTable, Pos, PosIdx, Formal
+#include "path.hh"                   // for StorePath
+#include "ref.hh"                    // for ref
+#include "symbol-table.hh"           // for SymbolTable, Symbol, SymbolStr
+#include "types.hh"                  // for Path, Explicit, PathView, Backed...
+#include "util.hh"                   // for canonPath, absPath, chomp, pathE...
+#include "value.hh"                  // for Value, Value::(anonymous), RootV...
 
 namespace nix {
 
@@ -716,6 +742,7 @@ void callFlake(EvalState & state,
         state.vCallFlake = allocRootValue(state.allocValue());
         state.eval(state.parseExprFromString(
             #include "call-flake.nix.gen.hh"
+
             , "/"), **state.vCallFlake);
     }
 

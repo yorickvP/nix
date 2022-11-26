@@ -1,13 +1,23 @@
 #pragma once
 
-#include "eval.hh"
-#include "path.hh"
+#include <gc/gc_allocator.h>  // for traceable_allocator
+#include <string>             // for string, basic_string, operator<
+#include <map>                // for map, map<>::value_compare
+#include <list>               // for list
+#include <optional>           // for optional
+#include <utility>            // for move
+#include <type_traits>        // for remove_reference<>::type
 
-#include <string>
-#include <map>
+#include "path.hh"            // for StorePath
+#include "types.hh"           // for StringSet
+#include "value.hh"           // for Value (ptr only), NixFloat, NixInt
 
 
 namespace nix {
+class Bindings;
+class EvalState;
+class Store;
+template <typename T> class ref;
 
 
 struct DrvInfo

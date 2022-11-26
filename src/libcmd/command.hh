@@ -1,12 +1,26 @@
 #pragma once
 
-#include "installables.hh"
-#include "args.hh"
-#include "common-eval-args.hh"
-#include "path.hh"
-#include "flake/lockfile.hh"
+#include <stdint.h>               // for uint32_t
+#include <nlohmann/json_fwd.hpp>  // for json
+#include <optional>               // for optional
+#include <functional>             // for function
+#include <map>                    // for map, map<>::value_compare
+#include <memory>                 // for shared_ptr, allocator
+#include <set>                    // for set
+#include <string>                 // for string, basic_string, operator<
+#include <string_view>            // for string_view
+#include <utility>                // for move
+#include <vector>                 // for vector
 
-#include <optional>
+#include "installables.hh"        // for OperateOn, Realise, Installables
+#include "args.hh"                // for Args, Command, Command::Category
+#include "common-eval-args.hh"    // for MixEvalArgs
+#include "path.hh"                // for StorePath
+#include "derived-path.hh"        // for BuiltPaths
+#include "eval.hh"                // for EvalState (ptr only), ValMap
+#include "flake/flake.hh"         // for LockFlags
+#include "ref.hh"                 // for ref, make_ref
+#include "types.hh"               // for Path, Strings, StringSet
 
 namespace nix {
 
@@ -14,8 +28,6 @@ extern std::string programPath;
 
 extern char * * savedArgv;
 
-class EvalState;
-struct Pos;
 class Store;
 
 static constexpr Command::Category catSecondary = 100;

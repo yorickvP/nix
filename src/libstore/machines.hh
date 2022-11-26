@@ -1,6 +1,10 @@
 #pragma once
 
-#include "types.hh"
+#include <set>     // for set
+#include <string>  // for string, basic_string, operator<
+#include <vector>  // for vector
+
+#include "ref.hh"  // for ref
 
 namespace nix {
 

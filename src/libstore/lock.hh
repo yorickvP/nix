@@ -1,8 +1,11 @@
 #pragma once
 
-#include "sync.hh"
-#include "types.hh"
-#include "util.hh"
+#include <assert.h>  // for assert
+#include <string>    // for string
+#include <vector>    // for vector
+
+#include "types.hh"  // for Path
+#include "util.hh"   // for AutoCloseFD
 
 namespace nix {
 

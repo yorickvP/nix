@@ -1,7 +1,15 @@
-#include "command.hh"
-#include "store-api.hh"
-#include "fs-accessor.hh"
-#include "nar-accessor.hh"
+#include <iostream>         // for cout, ostream
+#include <string>           // for string, allocator, basic_string, operator<<
+
+#include "command.hh"       // for registerCommand2, StoreCommand
+#include "store-api.hh"     // for Store
+#include "fs-accessor.hh"   // for FSAccessor, FSAccessor::Stat, FSAccessor:...
+#include "nar-accessor.hh"  // for makeNarAccessor
+#include "args.hh"          // for completePath, Args
+#include "error.hh"         // for Error
+#include "ref.hh"           // for ref, nix
+#include "types.hh"         // for Path
+#include "util.hh"          // for readFile
 
 using namespace nix;
 

@@ -1,7 +1,23 @@
-#include "command.hh"
-#include "common-args.hh"
+#include <nlohmann/json.hpp>         // for basic_json, basic_json<>::object_t
+#include <iostream>                  // for cout, ostream, operator<<, basic...
+#include <optional>                  // for optional
+#include <set>                       // for operator!=, _Rb_tree_const_iterator
+#include <string>                    // for string, basic_string, operator<<
+#include <type_traits>               // for remove_reference<>::type
+#include <utility>                   // for pair
+#include <variant>                   // for get_if
+#include <vector>                    // for vector
 
-#include <nlohmann/json.hpp>
+#include "command.hh"                // for registerCommand, registerCommand2
+#include "common-args.hh"            // for MixJSON
+#include "args.hh"                   // for Command, Command::Category, Mult...
+#include "derived-path.hh"           // for BuiltPaths, BuiltPath
+#include "error.hh"                  // for UsageError
+#include "experimental-features.hh"  // for Xp
+#include "globals.hh"                // for Settings, settings
+#include "realisation.hh"            // for RealisedPath::Set, RealisedPath
+#include "ref.hh"                    // for ref, nix
+#include "store-api.hh"              // for Store
 
 using namespace nix;
 
@@ -39,6 +55,7 @@ struct CmdRealisationInfo : BuiltPathsCommand, MixJSON
     {
         return
             #include "realisation/info.md"
+
             ;
     }
 

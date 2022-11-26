@@ -1,12 +1,19 @@
+#include <grp.h>             // for getgrouplist, getgrnam, group
+#include <pwd.h>             // for passwd, getpwnam
+#include <fcntl.h>           // for open, O_CLOEXEC, O_CREAT, O_RDWR
+#include <unistd.h>          // for geteuid, getuid
+#include <sys/types.h>       // for gid_t
+#include <boost/format.hpp>  // for basic_altstringbuf<>::int_type, basic_al...
+#include <list>              // for operator!=, _List_iterator, _List_iterat...
+#include <utility>           // for move
+
 #include "lock.hh"
-#include "globals.hh"
-#include "pathlocks.hh"
-
-#include <grp.h>
-#include <pwd.h>
-
-#include <fcntl.h>
-#include <unistd.h>
+#include "globals.hh"        // for Settings, settings
+#include "pathlocks.hh"      // for lockFile, ltWrite
+#include "config.hh"         // for Setting, BaseSetting
+#include "error.hh"          // for Error, SysError
+#include "fmt.hh"            // for format
+#include "logging.hh"        // for Logger, debug
 
 namespace nix {
 

@@ -1,6 +1,11 @@
+#include <stdlib.h>         // for abort
+#include <optional>         // for optional
+
 #include "loggers.hh"
-#include "progress-bar.hh"
-#include "util.hh"
+#include "progress-bar.hh"  // for makeProgressBar
+#include "util.hh"          // for getEnv
+#include "error.hh"         // for Error
+#include "logging.hh"       // for makeSimpleLogger, makeJSONLogger, Logger
 
 namespace nix {
 

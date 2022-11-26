@@ -1,6 +1,11 @@
 #pragma once
 
-#include "error.hh"
+#include <map>          // for map
+#include <optional>     // for optional
+#include <string>       // for string, basic_string
+#include <string_view>  // for string_view, basic_string_view
+
+#include "error.hh"     // for Error, MakeError
 
 namespace nix {
 

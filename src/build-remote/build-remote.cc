@@ -1,25 +1,45 @@
-#include <cstdlib>
-#include <cstring>
-#include <algorithm>
-#include <set>
-#include <memory>
-#include <tuple>
-#include <iomanip>
+#include <assert.h>                  // for assert
+#include <signal.h>                  // for signal, SIGALRM
+#include <stdint.h>                  // for uint64_t
+#include <sys/stat.h>                // for futimens, mkdir
+#include <unistd.h>                  // for alarm, close, STDIN_FILENO
+#include <boost/format.hpp>          // for basic_altstringbuf<>::int_type
+#include <cstdlib>                   // for unsetenv, NULL
+#include <algorithm>                 // for find, replace
+#include <set>                       // for operator!=, set, _Rb_tree_const_...
+#include <iostream>                  // for char_traits, operator<<, cerr
+#include <memory>                    // for allocator, shared_ptr, __shared_...
+#include <exception>                 // for exception
+#include <map>                       // for map
+#include <optional>                  // for optional
+#include <string>                    // for basic_string, string, operator+
+#include <utility>                   // for move, pair
+#include <vector>                    // for vector
 #if __APPLE__
 #include <sys/time.h>
 #endif
 
-#include "machines.hh"
-#include "shared.hh"
-#include "pathlocks.hh"
-#include "globals.hh"
-#include "serialise.hh"
-#include "build-result.hh"
-#include "store-api.hh"
-#include "derivations.hh"
-#include "local-store.hh"
-#include "legacy.hh"
-#include "experimental-features.hh"
+#include "machines.hh"               // for Machine, getMachines
+#include "pathlocks.hh"              // for lockFile, openLockFile, ltWrite
+#include "globals.hh"                // for Settings, settings, initPlugins
+#include "serialise.hh"              // for readString, FdSource, readStrings
+#include "build-result.hh"           // for BuildResult
+#include "store-api.hh"              // for Store, copyPaths, openStore, NoC...
+#include "derivations.hh"            // for Derivation, staticOutputHashes
+#include "local-store.hh"            // for LocalStore
+#include "legacy.hh"                 // for MainFunction, RegisterLegacyCommand
+#include "experimental-features.hh"  // for Xp
+#include "config.hh"                 // for Setting, PathSetting, operator==
+#include "error.hh"                  // for lvlTalkative, UsageError, Error
+#include "fmt.hh"                    // for fmt, hintformat
+#include "local-fs-store.hh"         // for LocalFSStore
+#include "logging.hh"                // for Logger, logger, Activity, actUnk...
+#include "path.hh"                   // for StorePath, StorePathSet
+#include "realisation.hh"            // for Realisation, DrvOutputs, DrvOutput
+#include "ref.hh"                    // for ref, nix
+#include "repair-flag.hh"            // for NoRepair
+#include "types.hh"                  // for StringSet, PathSet
+#include "util.hh"                   // for AutoCloseFD, concatStringsSep
 
 using namespace nix;
 using std::cin;

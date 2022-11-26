@@ -1,6 +1,7 @@
-#include "git.hh"
+#include <regex>   // for match_results, sub_match, regex_match, match_resul...
+#include <vector>  // for vector
 
-#include <regex>
+#include "git.hh"
 
 namespace nix {
 namespace git {

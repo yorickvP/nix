@@ -1,9 +1,13 @@
-#include "command.hh"
-#include "common-args.hh"
-#include "shared.hh"
-#include "store-api.hh"
+#include <nlohmann/json.hpp>  // for basic_json, json
+#include <boost/format.hpp>   // for basic_altstringbuf<>::int_type, basic_a...
+#include <string>             // for allocator, string
 
-#include <nlohmann/json.hpp>
+#include "command.hh"         // for registerCommand, catUtility
+#include "common-args.hh"     // for MixJSON
+#include "args.hh"            // for Command, Command::Category
+#include "config.hh"          // for GlobalConfig, globalConfig
+#include "logging.hh"         // for Logger, logger
+#include "ref.hh"             // for nix
 
 using namespace nix;
 

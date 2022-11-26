@@ -1,12 +1,30 @@
-#include "eval.hh"
-#include "command.hh"
-#include "common-args.hh"
-#include "shared.hh"
-#include "store-api.hh"
-#include "local-fs-store.hh"
-#include "progress-bar.hh"
+#include <nlohmann/json.hpp>  // for basic_json, basic_json<>::object_t, json
+#include <boost/format.hpp>   // for basic_altstringbuf<>::int_type, basic_a...
+#include <iostream>           // for endl, basic_ostream, cout, ostream
+#include <map>                // for map, operator!=, _Rb_tree_const_iterator
+#include <memory>             // for allocator, shared_ptr, __shared_ptr_access
+#include <optional>           // for optional
+#include <string>             // for string, operator<<, operator!=, basic_s...
+#include <utility>            // for pair
+#include <variant>            // for visit
+#include <vector>             // for vector, vector<>::iterator, max
 
-#include <nlohmann/json.hpp>
+#include "command.hh"         // for registerCommand, InstallablesCommand
+#include "common-args.hh"     // for MixDryRun, MixJSON
+#include "shared.hh"          // for printMissing
+#include "store-api.hh"       // for Store, BuildMode, bmCheck, bmNormal
+#include "local-fs-store.hh"  // for LocalFSStore
+#include "progress-bar.hh"    // for stopProgressBar
+#include "args.hh"            // for completePath
+#include "build-result.hh"    // for BuildResult
+#include "derived-path.hh"    // for DerivedPath, BuiltPath, BuiltPath::Built
+#include "error.hh"           // for lvlError
+#include "fmt.hh"             // for fmt
+#include "installables.hh"    // for BuiltPathWithResult, Installable, Realise
+#include "logging.hh"         // for Logger, logger
+#include "ref.hh"             // for ref, nix
+#include "types.hh"           // for Path
+#include "util.hh"            // for absPath, enumerate, iterable_wrapper
 
 using namespace nix;
 
@@ -82,6 +100,7 @@ struct CmdBuild : InstallablesCommand, MixDryRun, MixJSON, MixProfile
     {
         return
           #include "build.md"
+
           ;
     }
 

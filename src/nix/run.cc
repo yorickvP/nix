@@ -1,20 +1,39 @@
 #include "run.hh"
-#include "command.hh"
-#include "common-args.hh"
-#include "shared.hh"
-#include "store-api.hh"
-#include "derivations.hh"
-#include "local-store.hh"
-#include "finally.hh"
-#include "fs-accessor.hh"
-#include "progress-bar.hh"
-#include "eval.hh"
+#include "command.hh"         // for registerCommand, InstallableCommand
+#include "store-api.hh"       // for Store
+#include "finally.hh"         // for Finally
+#include "fs-accessor.hh"     // for FSAccessor, FSAccessor::Stat, FSAccesso...
+#include "progress-bar.hh"    // for stopProgressBar
+#include "args.hh"            // for completePath
+#include "config.hh"          // for Setting
+#include "error.hh"           // for SysError, UsageError, Error
+#include "flake/flake.hh"     // for LockFlags
+#include "fmt.hh"             // for fmt
+#include "globals.hh"         // for Settings, settings
+#include "installables.hh"    // for App, Installable, OperateOn, OperateOn:...
+#include "local-fs-store.hh"  // for LocalFSStore
+#include "path.hh"            // for StorePath, hash
+#include "ref.hh"             // for ref, nix
+#include "util.hh"            // for getEnv, stringsToCharPtrs, writeFile
 
 #if __linux__
-#include <sys/mount.h>
+#include <sys/mount.h>        // for mount, MS_BIND, MS_REC
 #endif
 
-#include <queue>
+#include <sched.h>            // for unshare, CLONE_NEWNS, CLONE_NEWUSER
+#include <stdlib.h>           // for free, setenv
+#include <sys/stat.h>         // for mkdir, stat, uid_t, S_ISDIR, S_ISLNK
+#include <unistd.h>           // for execvp, chdir, chroot, execv, getcwd
+#include <boost/format.hpp>   // for basic_altstringbuf<>::int_type, basic_a...
+#include <queue>              // for queue
+#include <algorithm>          // for copy
+#include <list>               // for list, operator!=, _List_iterator, _List...
+#include <memory>             // for shared_ptr, __shared_ptr_access
+#include <optional>           // for optional
+#include <set>                // for operator!=, set, _Rb_tree_const_iterator
+#include <unordered_set>      // for unordered_set
+#include <utility>            // for pair
+#include <vector>             // for vector
 
 using namespace nix;
 
@@ -89,6 +108,7 @@ struct CmdShell : InstallablesCommand, MixEnvironment
     {
         return
           #include "shell.md"
+
           ;
     }
 
@@ -156,6 +176,7 @@ struct CmdRun : InstallableCommand
     {
         return
           #include "run.md"
+
           ;
     }
 

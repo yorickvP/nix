@@ -1,12 +1,18 @@
-#include "command.hh"
-#include "shared.hh"
-#include "store-api.hh"
-#include "store-cast.hh"
-#include "log-store.hh"
-#include "sync.hh"
-#include "thread-pool.hh"
+#include <memory>           // for allocator, __shared_ptr_access, shared_ptr
+#include <optional>         // for optional
+#include <set>              // for operator!=, _Rb_tree_const_iterator, _Rb_...
+#include <string>           // for string, basic_string
+#include <vector>           // for vector
 
-#include <atomic>
+#include "command.hh"       // for registerCommand2, CopyCommand, Installabl...
+#include "store-api.hh"     // for Store
+#include "store-cast.hh"    // for require
+#include "log-store.hh"     // for LogStore
+#include "args.hh"          // for Command::Category
+#include "error.hh"         // for Error
+#include "installables.hh"  // for Installable
+#include "path.hh"          // for StorePathSet
+#include "ref.hh"           // for ref, nix
 
 using namespace nix;
 

@@ -1,8 +1,13 @@
 #pragma once
 
-#include "types.hh"
-#include "hash.hh"
-#include "path-info.hh"
+#include <stdint.h>      // for uint64_t
+#include <optional>      // for optional
+#include <string>        // for string
+#include <utility>       // for move
+
+#include "hash.hh"       // for Hash
+#include "path-info.hh"  // for ValidPathInfo
+#include "path.hh"       // for StorePath
 
 namespace nix {
 

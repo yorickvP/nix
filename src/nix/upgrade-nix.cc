@@ -1,11 +1,35 @@
-#include "command.hh"
-#include "common-args.hh"
-#include "store-api.hh"
-#include "filetransfer.hh"
-#include "eval.hh"
-#include "attr-path.hh"
-#include "names.hh"
-#include "progress-bar.hh"
+#include <boost/format.hpp>  // for basic_altstringbuf<>::int_type, basic_al...
+#include <list>              // for list, operator!=, _List_iterator, _List_...
+#include <memory>            // for allocator, unique_ptr, make_unique
+#include <optional>          // for optional
+#include <string>            // for string, basic_string, char_traits, opera...
+#include <string_view>       // for operator!=, string_view
+#include <utility>           // for pair
+
+#include "command.hh"        // for registerCommand, StoreCommand, catNixIns...
+#include "common-args.hh"    // for MixDryRun
+#include "store-api.hh"      // for Store
+#include "filetransfer.hh"   // for getFileTransfer, FileTransferRequest
+#include "eval.hh"           // for EvalState, EvalSettings, evalSettings
+#include "attr-path.hh"      // for findAlongAttrPath
+#include "names.hh"          // for DrvName
+#include "progress-bar.hh"   // for stopProgressBar
+#include "ansicolor.hh"      // for ANSI_GREEN, ANSI_NORMAL
+#include "args.hh"           // for Command::Category
+#include "config.hh"         // for Setting
+#include "error.hh"          // for Error, lvlInfo
+#include "eval-inline.hh"    // for EvalState::allocValue
+#include "fmt.hh"            // for fmt
+#include "globals.hh"        // for Settings, settings
+#include "logging.hh"        // for Activity, Logger, actUnknown, logger
+#include "path.hh"           // for StorePath
+#include "ref.hh"            // for ref, nix
+#include "types.hh"          // for Path, Strings
+#include "util.hh"           // for canonPath, runProgram, baseNameOf, dirOf
+
+namespace nix {
+class Bindings;
+}  // namespace nix
 
 using namespace nix;
 
@@ -41,6 +65,7 @@ struct CmdUpgradeNix : MixDryRun, StoreCommand
     {
         return
           #include "upgrade-nix.md"
+
           ;
     }
 

@@ -1,8 +1,14 @@
-#include <archive.h>
-#include <archive_entry.h>
+#include <archive.h>           // for archive_error_string, archive_read_sup...
+#include <archive_entry.h>     // for archive_entry_mode, archive_entry_copy...
+#include <errno.h>             // for EIO
+#include <sys/types.h>         // for ssize_t
+#include <exception>           // for exception
 
-#include "serialise.hh"
+#include "serialise.hh"        // for Source
 #include "tarfile.hh"
+#include "libutil/error.hh"    // for Error
+#include "libutil/logging.hh"  // for warn
+#include "libutil/util.hh"     // for createDirs, EndOfFile
 
 namespace nix {
 

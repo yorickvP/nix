@@ -9,6 +9,8 @@
 #include <unistd.h>
 #include <signal.h>
 
+#include "util.hh"
+
 namespace nix {
 
 

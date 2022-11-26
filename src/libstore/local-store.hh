@@ -1,21 +1,44 @@
 #pragma once
 
-#include "sqlite.hh"
+#include <stdint.h>            // for uint64_t, int64_t
+#include <sys/types.h>         // for ino_t, uid_t, dev_t
+#include <chrono>              // for steady_clock, time_point
+#include <future>              // for shared_future
+#include <string>              // for string, allocator, basic_string
+#include <unordered_set>       // for unordered_set
+#include <limits>              // for numeric_limits
+#include <map>                 // for map
+#include <memory>              // for shared_ptr, unique_ptr
+#include <optional>            // for optional
+#include <set>                 // for set
+#include <string_view>         // for string_view
+#include <utility>             // for pair
 
-#include "pathlocks.hh"
-#include "store-api.hh"
-#include "local-fs-store.hh"
-#include "gc-store.hh"
-#include "sync.hh"
-#include "util.hh"
-
-#include <chrono>
-#include <future>
-#include <string>
-#include <unordered_set>
+#include "sqlite.hh"           // for SQLite
+#include "store-api.hh"        // for CheckSigsFlag, NoSubstitute, StoreConfig
+#include "local-fs-store.hh"   // for LocalFSStoreConfig, LocalFSStore
+#include "gc-store.hh"         // for Roots, GCOptions (ptr only), GCResults...
+#include "sync.hh"             // for Sync
+#include "util.hh"             // for AutoCloseFD
+#include "config.hh"           // for Setting
+#include "content-address.hh"  // for FileIngestionMethod, FixedOutputHash
+#include "crypto.hh"           // for PublicKeys
+#include "error.hh"            // for Error, MakeError
+#include "globals.hh"          // for Settings, settings
+#include "hash.hh"             // for HashType
+#include "path-info.hh"        // for SubstitutablePathInfos, ValidPathInfo
+#include "path.hh"             // for StorePath, StorePathSet, StorePathCAMap
+#include "repair-flag.hh"      // for RepairFlag
+#include "types.hh"            // for Path, PathSet, StringSet, StringMap
 
 
 namespace nix {
+struct Activity;
+struct Derivation;
+struct DrvOutput;
+struct Realisation;
+struct Source;
+template <typename T> class Callback;
 
 
 /* Nix store and database schema version.  Version 1 (or 0) was Nix <=
@@ -57,6 +80,7 @@ private:
         SQLite db;
 
         struct Stmts;
+
         std::unique_ptr<Stmts> stmts;
 
         /* The global GC lock  */

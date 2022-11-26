@@ -1,9 +1,20 @@
-#include "config.hh"
-#include "args.hh"
-#include "abstract-setting-to-json.hh"
-#include "experimental-features.hh"
+#include <nlohmann/json.hpp>         // for basic_json, basic_json<>::object_t
+#include <boost/lexical_cast.hpp>    // for bad_lexical_cast
+#include <algorithm>                 // for transform
+#include <iterator>                  // for back_insert_iterator, advance
+#include <optional>                  // for optional
+#include <string_view>               // for string_view
+#include <type_traits>               // for is_integral, integral_constant<>...
+#include <utility>                   // for pair, move
 
-#include <nlohmann/json.hpp>
+#include "config.hh"
+#include "abstract-setting-to-json.hh"
+#include "args.hh"                   // for Args
+#include "experimental-features.hh"  // for ExperimentalFeature, parseExperi...
+#include "libutil/error.hh"          // for UsageError, Error, SysError
+#include "libutil/logging.hh"        // for warn
+#include "libutil/types.hh"          // for Strings, StringMap, StringSet, Path
+#include "libutil/util.hh"           // for concatStringsSep, tokenizeString
 
 namespace nix {
 

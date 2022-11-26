@@ -2,6 +2,7 @@
 
 #include "store-api.hh"
 
+#include <unordered_set>
 
 namespace nix {
 

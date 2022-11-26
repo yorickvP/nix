@@ -1,7 +1,26 @@
-#include "primops.hh"
-#include "eval-inline.hh"
-#include "derivations.hh"
-#include "store-api.hh"
+#include <boost/format.hpp>  // for basic_altstringbuf<>::int_type, basic_al...
+#include <list>              // for operator!=
+#include <map>               // for operator!=, map, _Rb_tree_iterator, _Rb_...
+#include <optional>          // for optional
+#include <string>            // for allocator, string, basic_string, operator<
+#include <utility>           // for move, pair
+
+#include "primops.hh"        // for RegisterPrimOp
+#include "eval-inline.hh"    // for EvalState::forceAttrs, EvalState::allocV...
+#include "derivations.hh"    // for isDerivation
+#include "store-api.hh"      // for Store
+#include "attr-set.hh"       // for Attr, Bindings, BindingsBuilder
+#include "error.hh"          // for Trace, ErrPos
+#include "eval.hh"           // for EvalState, decodeContext
+#include "fmt.hh"            // for hintfmt
+#include "globals.hh"        // for Settings, settings
+#include "nixexpr.hh"        // for Pos, PosTable, PosIdx, EvalError
+#include "ref.hh"            // for ref
+#include "suggestions.hh"    // for Suggestion
+#include "symbol-table.hh"   // for operator<<, SymbolStr, SymbolTable
+#include "types.hh"          // for PathSet, Path, Strings, BackedStringView
+#include "util.hh"           // for concatStrings, enumerate, iterable_wrapper
+#include "value.hh"          // for Value, Value::(anonymous), ListIterable
 
 namespace nix {
 

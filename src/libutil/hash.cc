@@ -1,18 +1,16 @@
-#include <iostream>
-#include <cstring>
+#include <openssl/md5.h>       // for MD5_Final, MD5_Init, MD5_Update, MD5_CTX
+#include <openssl/sha.h>       // for SHA1_Final, SHA1_Init, SHA1_Update
+#include <assert.h>            // for assert
+#include <stdlib.h>            // for abort
+#include <boost/format.hpp>    // for basic_altstringbuf<>::int_type, basic_...
+#include <cstring>             // for memcpy, memset
 
-#include <openssl/md5.h>
-#include <openssl/sha.h>
-
-#include "args.hh"
 #include "hash.hh"
-#include "archive.hh"
-#include "split.hh"
-#include "util.hh"
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
+#include "archive.hh"          // for dumpPath
+#include "split.hh"            // for splitPrefixTo
+#include "util.hh"             // for base64Decode, base64Encode, readFile
+#include "libutil/logging.hh"  // for warn
+#include "libutil/types.hh"    // for Path
 
 namespace nix {
 

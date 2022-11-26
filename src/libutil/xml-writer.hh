@@ -1,9 +1,11 @@
 #pragma once
 
-#include <iostream>
-#include <string>
-#include <list>
-#include <map>
+#include <stddef.h>     // for size_t
+#include <iostream>     // for ostream
+#include <string>       // for string
+#include <list>         // for list
+#include <map>          // for map, map<>::value_compare
+#include <string_view>  // for string_view
 
 
 namespace nix {

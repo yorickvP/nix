@@ -1,15 +1,33 @@
 #pragma once
 
-#include <map>
-#include <vector>
+#include <stddef.h>           // for size_t
+#include <stdint.h>           // for uint32_t
+#include <map>                // for map, map<>::value_compare
+#include <vector>             // for vector<>::iterator, vector<>::const_ite...
+#include <algorithm>          // for lower_bound, sort, stable_sort, upper_b...
+#include <iterator>           // for prev
+#include <limits>             // for numeric_limits
+#include <memory>             // for shared_ptr, allocator_traits<>::value_type
+#include <ostream>            // for operator<<, ostream
+#include <string>             // for string, char_traits
+#include <string_view>        // for operator<, string_view, basic_string_view
+#include <utility>            // for pair, move
 
-#include "value.hh"
-#include "symbol-table.hh"
-#include "error.hh"
-#include "chunked-vector.hh"
+#include "value.hh"           // for Value, NixFloat, NixInt
+#include "symbol-table.hh"    // for Symbol, SymbolStr, SymbolTable
+#include "error.hh"           // for Error, MakeError, FileOrigin, ErrorInfo
+#include "chunked-vector.hh"  // for ChunkedVector
 
 
 namespace nix {
+struct Expr;
+struct ExprOpAnd;
+struct ExprOpConcatLists;
+struct ExprOpEq;
+struct ExprOpImpl;
+struct ExprOpNEq;
+struct ExprOpOr;
+struct ExprOpUpdate;
 
 
 MakeError(EvalError, Error);
@@ -117,7 +135,6 @@ std::ostream & operator << (std::ostream & str, const Pos & pos);
 
 
 struct Env;
-struct Value;
 class EvalState;
 struct StaticEnv;
 

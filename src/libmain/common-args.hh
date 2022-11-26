@@ -1,6 +1,8 @@
 #pragma once
 
-#include "args.hh"
+#include <string>   // for allocator, string
+
+#include "args.hh"  // for Args
 
 namespace nix {
 

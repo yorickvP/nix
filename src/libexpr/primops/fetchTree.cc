@@ -1,13 +1,42 @@
-#include "primops.hh"
-#include "eval-inline.hh"
-#include "store-api.hh"
-#include "fetchers.hh"
-#include "filetransfer.hh"
-#include "registry.hh"
+#include <assert.h>                  // for assert
+#include <cxxabi.h>                  // for __forced_unwind
+#include <stdint.h>                  // for uint64_t
+#include <boost/format.hpp>          // for basic_altstringbuf<>::int_type
+#include <ctime>                     // for gmtime
+#include <iomanip>                   // for operator<<, put_time
+#include <regex>                     // for match_results<>::_Base_type, reg...
+#include <map>                       // for operator!=, _Rb_tree_iterator<>:...
+#include <optional>                  // for optional, operator==, nullopt
+#include <sstream>                   // for basic_stringbuf<>::int_type, bas...
+#include <string>                    // for string, allocator, basic_string
+#include <string_view>               // for operator==, string_view, basic_s...
+#include <utility>                   // for move, pair
+#include <vector>                    // for vector
 
-#include <ctime>
-#include <iomanip>
-#include <regex>
+#include "primops.hh"                // for RegisterPrimOp
+#include "eval-inline.hh"            // for EvalState::forceValue, EvalState...
+#include "store-api.hh"              // for Store
+#include "fetchers.hh"               // for Input, Tree, downloadFile, downl...
+#include "filetransfer.hh"           // for resolveUri
+#include "registry.hh"               // for lookupInRegistries
+#include "attr-set.hh"               // for Attr, BindingsBuilder, Bindings
+#include "attrs.hh"                  // for Attrs, maybeGetBoolAttr
+#include "config.hh"                 // for Setting
+#include "content-address.hh"        // for FileIngestionMethod, FileIngesti...
+#include "error.hh"                  // for Trace, ErrPos
+#include "eval.hh"                   // for EvalState, EvalSettings, evalSet...
+#include "experimental-features.hh"  // for ExperimentalFeature, Xp
+#include "fmt.hh"                    // for hintfmt, fmt
+#include "globals.hh"                // for Settings, settings
+#include "hash.hh"                   // for Hash, HashType, hashFile, htSHA256
+#include "nixexpr.hh"                // for PosTable, Pos, EvalError, PosIdx
+#include "path-info.hh"              // for ValidPathInfo
+#include "ref.hh"                    // for ref
+#include "suggestions.hh"            // for Suggestion
+#include "symbol-table.hh"           // for SymbolTable, SymbolStr, Symbol
+#include "types.hh"                  // for BackedStringView, Explicit, PathSet
+#include "util.hh"                   // for baseNameOf
+#include "value.hh"                  // for Value, Value::(anonymous), nAttrs
 
 namespace nix {
 

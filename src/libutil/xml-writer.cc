@@ -1,4 +1,5 @@
-#include <cassert>
+#include <cassert>  // for assert
+#include <utility>  // for pair
 
 #include "xml-writer.hh"
 

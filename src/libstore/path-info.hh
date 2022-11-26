@@ -1,17 +1,26 @@
 #pragma once
 
-#include "crypto.hh"
-#include "path.hh"
-#include "hash.hh"
-#include "content-address.hh"
+#include <stdint.h>            // for uint64_t
+#include <time.h>              // for size_t, time_t
+#include <string>              // for string
+#include <optional>            // for optional
+#include <limits>              // for numeric_limits
+#include <map>                 // for map
+#include <set>                 // for operator==
+#include <utility>             // for move
 
-#include <string>
-#include <optional>
+#include "crypto.hh"           // for PublicKeys, SecretKey
+#include "path.hh"             // for StorePath, StorePathSet
+#include "hash.hh"             // for Hash
+#include "content-address.hh"  // for ContentAddress
+#include "types.hh"            // for StringSet, Strings
 
 namespace nix {
 
 
 class Store;
+struct Sink;
+struct Source;
 
 
 struct SubstitutablePathInfo

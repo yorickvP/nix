@@ -1,15 +1,49 @@
-#include "eval.hh"
-#include "command.hh"
-#include "common-args.hh"
-#include "shared.hh"
-#include "store-api.hh"
-#include "path-with-outputs.hh"
-#include "derivations.hh"
-#include "progress-bar.hh"
-#include "run.hh"
+#include <assert.h>                  // for assert
+#include <stdlib.h>                  // for setenv
+#include <sys/stat.h>                // for stat
+#include <unistd.h>                  // for chdir
+#include <nlohmann/json.hpp>         // for basic_json<>::object_t, basic_json
+#include <boost/format.hpp>          // for basic_altstringbuf<>::int_type
+#include <memory>                    // for allocator, shared_ptr, __shared_...
+#include <algorithm>                 // for max, equal, for_each, lexicograp...
+#include <initializer_list>          // for initializer_list
+#include <list>                      // for list, operator!=, _List_iterator
+#include <map>                       // for map, operator!=, _Rb_tree_const_...
+#include <optional>                  // for optional
+#include <ostream>                   // for operator<<, basic_ostream, ostream
+#include <set>                       // for set
+#include <string>                    // for string, basic_string, operator+
+#include <string_view>               // for string_view, operator!=, basic_s...
+#include <type_traits>               // for remove_reference<>::type, add_co...
+#include <utility>                   // for pair, move, tuple_element<>::type
+#include <variant>                   // for get_if, operator==, variant
+#include <vector>                    // for vector
 
-#include <memory>
-#include <nlohmann/json.hpp>
+#include "command.hh"                // for registerCommand, SourceExprCommand
+#include "common-args.hh"            // for MixJSON
+#include "store-api.hh"              // for Store, bmNormal
+#include "path-with-outputs.hh"      // for DefaultOutputs
+#include "derivations.hh"            // for Derivation, DerivationOutputs
+#include "progress-bar.hh"           // for stopProgressBar
+#include "run.hh"                    // for runProgramInStore
+#include "args.hh"                   // for Command::Category
+#include "config.hh"                 // for Setting, BaseSetting, Config
+#include "derived-path.hh"           // for DerivedPath, DerivedPath::Built
+#include "error.hh"                  // for Error, UsageError, SysError, lvl...
+#include "experimental-features.hh"  // for Xp
+#include "fetchers.hh"               // for Input
+#include "flake/flake.hh"            // for LockFlags, Flake, LockedFlake
+#include "flake/flakeref.hh"         // for FlakeRef
+#include "flake/lockfile.hh"         // for InputPath
+#include "fmt.hh"                    // for fmt
+#include "globals.hh"                // for Settings, settings
+#include "hash.hh"                   // for Hash
+#include "installables.hh"           // for InstallableFlake, Installable
+#include "logging.hh"                // for Logger, warn, debug, logger, pri...
+#include "path.hh"                   // for StorePath, StorePathSet
+#include "ref.hh"                    // for ref, nix
+#include "types.hh"                  // for Path, Strings, StringPairs, Stri...
+#include "util.hh"                   // for shellEscape, baseNameOf, absPath
 
 using namespace nix;
 
@@ -168,6 +202,7 @@ struct BuildEnvironment
 
 const static std::string getEnvSh =
     #include "get-env.sh.gen.hh"
+
     ;
 
 /* Given an existing derivation, return the shell environment as
@@ -461,6 +496,7 @@ struct CmdDevelop : Common, MixEnvironment
     {
         return
           #include "develop.md"
+
           ;
     }
 
@@ -583,6 +619,7 @@ struct CmdPrintDevEnv : Common, MixJSON
     {
         return
           #include "print-dev-env.md"
+
           ;
     }
 

@@ -1,8 +1,13 @@
 #pragma once
 
-#include "comparator.hh"
-#include "types.hh"
-#include <set>
+#include <set>                     // for set
+#include <iosfwd>                  // for ostream
+#include <string>                  // for string
+#include <string_view>             // for string_view
+#include <variant>                 // for get_if, holds_alternative, variant
+
+#include "comparator.hh"           // for GENERATE_CMP
+#include "libutil/suggestions.hh"  // for me
 
 namespace nix {
 

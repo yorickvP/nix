@@ -1,7 +1,9 @@
+#include <algorithm>     // for min
+#include <vector>        // for vector, swap
+
 #include "suggestions.hh"
-#include "ansicolor.hh"
-#include "util.hh"
-#include <algorithm>
+#include "ansicolor.hh"  // for ANSI_NORMAL, ANSI_WARNING
+#include "util.hh"       // for filterANSIEscapes
 
 namespace nix {
 

@@ -1,9 +1,12 @@
 #pragma once
 
-#include "derivations.hh"
-#include "store-api.hh"
+#include <string>    // for basic_string
+#include <vector>    // for max, vector
+
+#include "types.hh"  // for Path
 
 namespace nix {
+struct BasicDerivation;
 
 struct Package {
     Path path;

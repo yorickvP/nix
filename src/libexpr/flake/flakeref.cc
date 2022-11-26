@@ -1,9 +1,20 @@
+#include <sys/stat.h>    // for stat, S_ISDIR, dev_t
+#include <map>           // for map, map<>::mapped_type
+#include <regex>         // for match_results, regex_match, match_results<>:...
+#include <sstream>       // for basic_stringbuf<>::int_type, basic_stringbuf...
+#include <string_view>   // for string_view
+#include <type_traits>   // for remove_reference<>::type
+#include <vector>        // for vector
+
 #include "flakeref.hh"
-#include "store-api.hh"
-#include "url.hh"
-#include "url-parts.hh"
-#include "fetchers.hh"
-#include "registry.hh"
+#include "url.hh"        // for decodeQuery, ParsedURL, percentDecode, BadURL
+#include "url-parts.hh"  // for queryRegex, flakeIdRegexS, refAndOrRevRegex
+#include "fetchers.hh"   // for Input, Tree
+#include "registry.hh"   // for lookupInRegistries
+#include "error.hh"      // for Error
+#include "logging.hh"    // for Logger, notice
+#include "ref.hh"        // for ref
+#include "util.hh"       // for pathExists, getOr, lstat, dirOf, absPath
 
 namespace nix {
 

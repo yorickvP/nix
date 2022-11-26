@@ -1,10 +1,20 @@
-#include "value-to-json.hh"
-#include "json.hh"
-#include "eval-inline.hh"
-#include "util.hh"
+#include <boost/format.hpp>  // for basic_altstringbuf<>::int_type, basic_al...
+#include <map>               // for operator!=, _Rb_tree_const_iterator, _Rb...
+#include <optional>          // for optional
+#include <string>            // for allocator, basic_string, operator<
 
-#include <cstdlib>
-#include <iomanip>
+#include "value-to-json.hh"
+#include "json.hh"           // for JSONPlaceholder, JSONList, JSONObject
+#include "eval-inline.hh"    // for EvalState::forceValue
+#include "util.hh"           // for checkInterrupt
+#include "attr-set.hh"       // for Bindings, Attr
+#include "error.hh"          // for Trace, ErrPos
+#include "eval.hh"           // for EvalState, showType, copyContext
+#include "fmt.hh"            // for hintfmt
+#include "nixexpr.hh"        // for Pos, PosIdx, TypeError, PosTable
+#include "suggestions.hh"    // for Suggestion
+#include "symbol-table.hh"   // for SymbolTable
+#include "value.hh"          // for Value, Value::(anonymous), ExternalValue...
 
 
 namespace nix {

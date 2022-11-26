@@ -1,37 +1,45 @@
+#include <unistd.h>                                        // for sysconf
+#include <sys/resource.h>                                  // for getrusage
+#include <assert.h>                                        // for assert
+#include <stdint.h>                                        // for uint64_t
+#include <stdlib.h>                                        // for abort
+#include <boost/context/stack_traits.hpp>                  // for stack_traits
+#include <boost/format.hpp>                                // for basic_alts...
+#include <cstring>                                         // for strcmp
+#include <fstream>                                         // IWYU pragma: keep
+#include <iostream>                                        // for operator<<
+#include <functional>                                      // for function
+#include <new>                                             // for bad_alloc
+#include <set>                                             // for set
+#include <type_traits>                                     // for remove_ref...
+
 #include "eval.hh"
-#include "hash.hh"
-#include "types.hh"
-#include "util.hh"
-#include "store-api.hh"
-#include "derivations.hh"
-#include "globals.hh"
-#include "eval-inline.hh"
-#include "filetransfer.hh"
-#include "json.hh"
-#include "function-trace.hh"
-
-#include <algorithm>
-#include <chrono>
-#include <cstring>
-#include <unistd.h>
-#include <sys/time.h>
-#include <sys/resource.h>
-#include <iostream>
-#include <fstream>
-#include <functional>
-
-#include <sys/resource.h>
+#include "hash.hh"                                         // for htSHA256
+#include "types.hh"                                        // for Path, Back...
+#include "util.hh"                                         // for getEnv
+#include "store-api.hh"                                    // for Store, Inv...
+#include "derivations.hh"                                  // for isDerivation
+#include "globals.hh"                                      // for Settings
+#include "eval-inline.hh"                                  // for EvalState:...
+#include "filetransfer.hh"                                 // for isUri
+#include "json.hh"                                         // for JSONObject
+#include "function-trace.hh"                               // for FunctionCa...
+#include "ansicolor.hh"                                    // for ANSI_NORMAL
+#include "content-address.hh"                              // for FileIngest...
+#include "logging.hh"                                      // for Logger
+#include "path.hh"                                         // for StorePathSet
+#include "repair-flag.hh"                                  // for NoRepair
+#include "serialise.hh"                                    // for StackAlloc...
+#include "suggestions.hh"                                  // for Suggestion
 
 #if HAVE_BOEHMGC
 
 #define GC_INCLUDE_NEW
 
-#include <gc/gc.h>
+#include <gc/gc.h>                                         // for GC_add_roots
 #include <gc/gc_cpp.h>
-
-#include <boost/coroutine2/coroutine.hpp>
-#include <boost/coroutine2/protected_fixedsize_stack.hpp>
-#include <boost/context/stack_context.hpp>
+#include <boost/coroutine2/protected_fixedsize_stack.hpp>  // for protected_...
+#include <boost/context/stack_context.hpp>                 // for stack_context
 
 #endif
 

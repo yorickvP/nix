@@ -1,8 +1,8 @@
-#include "json.hh"
+#include <cstdint>    // for uint16_t
+#include <exception>  // for uncaught_exceptions
+#include <string>     // for string, allocator, operator<<
 
-#include <iomanip>
-#include <cstdint>
-#include <cstring>
+#include "json.hh"
 
 namespace nix {
 

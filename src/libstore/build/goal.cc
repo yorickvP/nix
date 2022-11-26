@@ -1,5 +1,12 @@
+#include <assert.h>          // for assert
+#include <boost/format.hpp>  // for basic_altstringbuf<>::int_type, basic_al...
+#include <type_traits>       // for remove_reference<>::type
+
 #include "goal.hh"
-#include "worker.hh"
+#include "worker.hh"         // for Worker
+#include "config.hh"         // for Setting
+#include "globals.hh"        // for Settings, settings
+#include "logging.hh"        // for Logger, debug, logError
 
 namespace nix {
 

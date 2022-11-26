@@ -1,19 +1,17 @@
 #pragma once
 
-#include "suggestions.hh"
-#include "ref.hh"
-#include "types.hh"
-#include "fmt.hh"
+#include <errno.h>         // for errno
+#include <cstring>         // for strerror
+#include <list>            // for list
+#include <optional>        // for optional
+#include <exception>       // for exception
+#include <iosfwd>          // for ostream
+#include <string>          // for string, basic_string
+#include <string_view>     // for basic_string_view
+#include <utility>         // for move
 
-#include <cstring>
-#include <list>
-#include <memory>
-#include <map>
-#include <optional>
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
+#include "suggestions.hh"  // for Suggestion, Suggestions
+#include "fmt.hh"          // for hintfmt, hintformat, normaltxt
 
 /* Before 4.7, gcc's std::exception uses empty throw() specifiers for
  * its (virtual) destructor and what() in c++11 mode, in violation of spec

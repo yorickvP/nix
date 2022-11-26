@@ -1,10 +1,18 @@
+#include <nlohmann/json.hpp>         // for basic_json<>::object_t, basic_json
+#include <assert.h>                  // for assert
+#include <stddef.h>                  // for size_t
+#include <optional>                  // for optional
+#include <memory>                    // for allocator, shared_ptr, __shared_...
+
 #include "derived-path.hh"
-#include "derivations.hh"
-#include "store-api.hh"
-
-#include <nlohmann/json.hpp>
-
-#include <optional>
+#include "derivations.hh"            // for staticOutputHashes, Derivation
+#include "store-api.hh"              // for Store
+#include "error.hh"                  // for Error
+#include "experimental-features.hh"  // for Xp
+#include "globals.hh"                // for Settings, settings
+#include "hash.hh"                   // for Hash
+#include "ref.hh"                    // for ref
+#include "util.hh"                   // for get, concatStringsSep, tokenizeS...
 
 namespace nix {
 

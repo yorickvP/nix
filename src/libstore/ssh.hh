@@ -1,7 +1,11 @@
 #pragma once
 
-#include "util.hh"
-#include "sync.hh"
+#include <memory>    // for unique_ptr
+#include <string>    // for string
+
+#include "util.hh"   // for AutoCloseFD, AutoDelete, Pid
+#include "sync.hh"   // for Sync
+#include "types.hh"  // for Path, Strings
 
 namespace nix {
 

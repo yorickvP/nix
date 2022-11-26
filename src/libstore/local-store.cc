@@ -1,45 +1,53 @@
+#include <sys/stat.h>                // for stat, chmod, S_ISLNK, S_ISDIR
+#include <sys/time.h>                // for timeval, lutimes, utimes
+#include <unistd.h>                  // for geteuid, getuid, chown, getpid
+#include <fcntl.h>                   // for open, S_IFMT, posix_fallocate
+#include <errno.h>                   // for errno, ENODATA, ENOSYS, ENOTSUP
+#include <time.h>                    // for time
+#include <grp.h>                     // for getgrnam, group
+#include <assert.h>                  // for assert
+#include <boost/format.hpp>          // for basic_altstringbuf<>::int_type
+#include <boost/lexical_cast.hpp>    // for bad_lexical_cast
+#include <algorithm>                 // for equal, min, reverse
+#include <cstdint>                   // for int64_t
+#include <initializer_list>          // for initializer_list
+#include <list>                      // for list, operator!=, _List_iterator
+#include <tuple>                     // for tie, tuple
+#include <type_traits>               // for remove_reference<>::type, add_co...
+#include <variant>                   // for get_if, visit
+#include <vector>                    // for vector
+
 #include "local-store.hh"
-#include "globals.hh"
-#include "archive.hh"
-#include "pathlocks.hh"
-#include "worker-protocol.hh"
-#include "derivations.hh"
-#include "nar-info.hh"
-#include "references.hh"
-#include "callback.hh"
-#include "topo-sort.hh"
-#include "finally.hh"
-#include "compression.hh"
-
-#include <iostream>
-#include <algorithm>
-#include <cstring>
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/select.h>
-#include <sys/time.h>
-#include <unistd.h>
-#include <utime.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <stdio.h>
-#include <time.h>
-#include <grp.h>
+#include "globals.hh"                // for Settings, settings, nixVersion
+#include "archive.hh"                // for dumpPath, restorePath, dumpString
+#include "pathlocks.hh"              // for lockFile, PathLocks, ltRead, ltW...
+#include "worker-protocol.hh"        // for PROTOCOL_VERSION
+#include "derivations.hh"            // for DrvHash, Derivation, DerivationO...
+#include "nar-info.hh"               // for NarInfo
+#include "references.hh"             // for HashModuloSink
+#include "callback.hh"               // for Callback
+#include "topo-sort.hh"              // for topoSort
+#include "finally.hh"                // for Finally
+#include "compression.hh"            // for compress
+#include "experimental-features.hh"  // for Xp
+#include "fmt.hh"                    // for fmt, format
+#include "logging.hh"                // for Logger, printInfo, printError
+#include "lru-cache.hh"              // for LRUCache
+#include "realisation.hh"            // for Realisation, DrvOutput
+#include "ref.hh"                    // for ref
+#include "serialise.hh"              // for StringSource, TeeSource, StringSink
 
 #if __linux__
-#include <sched.h>
-#include <sys/statvfs.h>
-#include <sys/mount.h>
-#include <sys/ioctl.h>
-#include <sys/xattr.h>
+#include <sys/statvfs.h>             // for statvfs, ST_RDONLY
+#include <sys/mount.h>               // for mount, MS_BIND, MS_REMOUNT
+#include <sys/xattr.h>               // for llistxattr, lremovexattr
 #endif
 
 #ifdef __CYGWIN__
 #include <windows.h>
 #endif
 
-#include <sqlite3.h>
+#include <sqlite3.h>                 // for sqlite3_column_text, sqlite3_exec
 
 
 namespace nix {
@@ -97,6 +105,7 @@ void migrateCASchema(SQLite& db, Path schemaPath, AutoCloseFD& lockFd)
         if (curCASchema == 0) {
             static const char schema[] =
               #include "ca-specific-schema.sql.gen.hh"
+
                 ;
             db.exec(schema);
             curCASchema = nixCASchemaVersion;
@@ -514,6 +523,7 @@ void LocalStore::openDB(State & state, bool create)
     if (create) {
         static const char schema[] =
 #include "schema.sql.gen.hh"
+
             ;
         db.exec(schema);
     }

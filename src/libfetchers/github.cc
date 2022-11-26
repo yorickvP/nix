@@ -1,16 +1,37 @@
-#include "filetransfer.hh"
-#include "cache.hh"
-#include "globals.hh"
-#include "store-api.hh"
-#include "types.hh"
-#include "url-parts.hh"
-#include "git.hh"
-#include "fetchers.hh"
-#include "fetch-settings.hh"
+#include <nlohmann/json.hpp>     // for basic_json<>::object_t, basic_json
+#include <assert.h>              // for assert
+#include <boost/format.hpp>      // for basic_altstringbuf<>::int_type, basi...
+#include <optional>              // for optional, operator!=
+#include <cstdint>               // for uint64_t
+#include <fstream>               // IWYU pragma: keep
+#include <initializer_list>      // for initializer_list
+#include <iterator>              // for next
+#include <map>                   // for map, operator!=, _Rb_tree_const_iter...
+#include <memory>                // for allocator, make_unique, __alloc_trai...
+#include <regex>                 // for regex_match, match_results<>::_Base_...
+#include <sstream>               // for basic_stringbuf<>::int_type, ifstream
+#include <string>                // for string, basic_string, operator!=
+#include <type_traits>           // for remove_reference<>::type, __strip_re...
+#include <utility>               // for pair, tuple_element<>::type, make_pair
+#include <vector>                // for vector, vector<>::reference
 
-#include <optional>
-#include <nlohmann/json.hpp>
-#include <fstream>
+#include "cache.hh"              // for getCache, Cache
+#include "store-api.hh"          // for Store
+#include "types.hh"              // for Path, Headers, OnStartup
+#include "url-parts.hh"          // for refRegex, revRegex
+#include "git.hh"                // for parseLsRemoteLine, LsRemoteRefLine
+#include "fetchers.hh"           // for Input, downloadFile, registerInputSc...
+#include "fetch-settings.hh"     // for FetchSettings, fetchSettings
+#include "config.hh"             // for Setting
+#include "error.hh"              // for Error
+#include "fmt.hh"                // for fmt
+#include "hash.hh"               // for Hash, HashType, htSHA1, Base16
+#include "libfetchers/attrs.hh"  // for getStrAttr, maybeGetStrAttr, Attrs
+#include "logging.hh"            // for warn, Logger, debug
+#include "path.hh"               // for StorePath
+#include "ref.hh"                // for ref
+#include "url.hh"                // for ParsedURL, BadURL
+#include "util.hh"               // for readFile, get, tokenizeString
 
 namespace nix::fetchers {
 

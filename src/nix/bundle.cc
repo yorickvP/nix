@@ -1,9 +1,35 @@
-#include "command.hh"
-#include "common-args.hh"
-#include "shared.hh"
-#include "store-api.hh"
-#include "local-fs-store.hh"
-#include "fs-accessor.hh"
+#include <stddef.h>           // for size_t
+#include <boost/format.hpp>   // for basic_altstringbuf<>::int_type, basic_a...
+#include <list>               // for operator!=, _List_iterator, list, _List...
+#include <memory>             // for allocator, __shared_ptr_access, shared_ptr
+#include <optional>           // for optional
+#include <string>             // for operator+, basic_string, char_traits
+#include <string_view>        // for string_view
+#include <tuple>              // for tuple_element<>::type
+#include <utility>            // for move, pair
+
+#include "command.hh"         // for completeFlakeRef, registerCommand, Sour...
+#include "store-api.hh"       // for Store
+#include "local-fs-store.hh"  // for LocalFSStore
+#include "args.hh"            // for completePath, Command::Category
+#include "attr-set.hh"        // for Attr, Bindings
+#include "config.hh"          // for Setting
+#include "derived-path.hh"    // for DerivedPath, DerivedPath::Built
+#include "error.hh"           // for Error
+#include "eval-inline.hh"     // for EvalState::allocValue
+#include "eval.hh"            // for EvalState
+#include "flake/flake.hh"     // for LockFlags
+#include "flake/flakeref.hh"  // for parseFlakeRefWithFragmentAndOutputsSpec
+#include "flake/lockfile.hh"  // for InputPath
+#include "fmt.hh"             // for fmt
+#include "globals.hh"         // for Settings, settings
+#include "installables.hh"    // for InstallableFlake, Installable
+#include "nixexpr.hh"         // for noPos
+#include "path.hh"            // for StorePath
+#include "ref.hh"             // for ref, nix
+#include "types.hh"           // for Path, Strings, PathSet
+#include "util.hh"            // for absPath
+#include "value.hh"           // for Value, Value::(anonymous)
 
 using namespace nix;
 
@@ -44,6 +70,7 @@ struct CmdBundle : InstallableCommand
     {
         return
           #include "bundle.md"
+
           ;
     }
 

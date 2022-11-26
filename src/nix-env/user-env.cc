@@ -1,18 +1,35 @@
-#include "user-env.hh"
-#include "util.hh"
-#include "derivations.hh"
-#include "store-api.hh"
-#include "path-with-outputs.hh"
-#include "local-fs-store.hh"
-#include "globals.hh"
-#include "shared.hh"
-#include "eval.hh"
-#include "eval-inline.hh"
-#include "profiles.hh"
+#include <stddef.h>              // for size_t
+#include <boost/format.hpp>      // for format
+#include <list>                  // for operator!=, _List_iterator, _List_it...
+#include <map>                   // for operator!=, _Rb_tree_const_iterator
+#include <memory>                // for shared_ptr
+#include <optional>              // for optional, nullopt
+#include <sstream>               // for ostringstream, basic_ostringstream<>...
+#include <utility>               // for pair
+#include <vector>                // for max, vector
 
+#include "user-env.hh"
+#include "util.hh"               // for pathExists, enumerate, iterable_wrapper
+#include "store-api.hh"          // for Store, bmNormal, bmRepair
+#include "path-with-outputs.hh"  // for StorePathWithOutputs, toDerivedPaths
+#include "eval.hh"               // for EvalState
+#include "eval-inline.hh"        // for EvalState::allocValue, EvalState::fo...
+#include "profiles.hh"           // for createGeneration, lockProfile, optim...
+#include "pathlocks.hh"          // for PathLocks
+#include "attr-set.hh"           // for BindingsBuilder, Attr, Bindings
+#include "error.hh"              // for Error
+#include "fmt.hh"                // for format
+#include "logging.hh"            // for Logger, debug, printInfo
+#include "nixexpr.hh"            // for PosIdx, noPos
+#include "path.hh"               // for StorePath, StorePathSet
+#include "ref.hh"                // for ref
+#include "symbol-table.hh"       // for SymbolTable
+#include "value.hh"              // for Value, Value::(anonymous)
+#include "local-fs-store.hh"     // for LocalFSStore
+
+// IWYU pragma: no_forward_declare nix::LocalFSStore
 
 namespace nix {
-
 
 DrvInfos queryInstalled(EvalState & state, const Path & userEnv)
 {
@@ -114,6 +131,7 @@ bool createUserEnv(EvalState & state, DrvInfos & elems,
     Value envBuilder;
     state.eval(state.parseExprFromString(
         #include "buildenv.nix.gen.hh"
+
             , "/"), envBuilder);
 
     /* Construct a Nix expression that calls the user environment

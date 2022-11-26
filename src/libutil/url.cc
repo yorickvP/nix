@@ -1,7 +1,19 @@
+#include <string.h>          // for strchr, size_t
+#include <boost/format.hpp>  // for basic_altstringbuf<>::int_type, basic_al...
+#include <list>              // for list, operator!=, _List_iterator, _List_...
+#include <regex>             // for sub_match, regex, match_results, _NFA
+#include <sstream>           // for basic_stringbuf<>::int_type, basic_strin...
+#include <type_traits>       // for add_const<>::type
+#include <utility>           // for tuple_element<>::type
+#include <vector>            // for vector
+#include <algorithm>         // for equal
+
 #include "url.hh"
-#include "url-parts.hh"
-#include "util.hh"
-#include "split.hh"
+#include "url-parts.hh"      // for queryRegex, absPathRegex, authorityRegex
+#include "util.hh"           // for tokenizeString
+#include "split.hh"          // for splitPrefixTo
+#include "libutil/fmt.hh"    // for fmt
+#include "libutil/types.hh"  // for Strings
 
 namespace nix {
 

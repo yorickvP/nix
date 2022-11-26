@@ -1,5 +1,25 @@
-#include "fetchers.hh"
-#include "url-parts.hh"
+#include <map>                   // for operator!=, _Rb_tree_const_iterator
+#include <memory>                // for allocator, make_unique, __alloc_trai...
+#include <optional>              // for optional, operator!=
+#include <regex>                 // for regex_match, match_results<>::_Base_...
+#include <string>                // for basic_string, string, operator!=
+#include <utility>               // for tuple_element<>::type, pair
+#include <vector>                // for vector
+
+#include "fetchers.hh"           // for Input, registerInputScheme, InputScheme
+#include "url-parts.hh"          // for refRegex, revRegex
+#include "error.hh"              // for Error
+#include "hash.hh"               // for Hash, HashType, htSHA1
+#include "libfetchers/attrs.hh"  // for Attrs, getStrAttr, maybeGetStrAttr
+#include "path.hh"               // for StorePath
+#include "ref.hh"                // for ref
+#include "types.hh"              // for OnStartup
+#include "url.hh"                // for ParsedURL, BadURL
+#include "util.hh"               // for tokenizeString
+
+namespace nix {
+class Store;
+}  // namespace nix
 
 namespace nix::fetchers {
 

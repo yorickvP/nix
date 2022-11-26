@@ -1,9 +1,16 @@
-#include "command.hh"
-#include "common-args.hh"
-#include "shared.hh"
-#include "store-api.hh"
-#include "store-cast.hh"
-#include "gc-store.hh"
+#include <string>         // for string, basic_string, allocator
+#include <vector>         // for vector
+
+#include "command.hh"     // for registerCommand2, StorePathsCommand
+#include "shared.hh"      // for PrintFreed
+#include "store-cast.hh"  // for require
+#include "gc-store.hh"    // for GCOptions, GcStore, GCOptions::gcDeleteSpec...
+#include "path.hh"        // for StorePath, StorePathSet
+#include "ref.hh"         // for ref, nix
+
+namespace nix {
+class Store;
+}  // namespace nix
 
 using namespace nix;
 

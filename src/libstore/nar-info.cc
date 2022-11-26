@@ -1,6 +1,15 @@
-#include "globals.hh"
+#include <assert.h>                // for assert
+#include <stddef.h>                // for size_t
+#include <boost/lexical_cast.hpp>  // for bad_lexical_cast
+#include <list>                    // for operator!=, list, _List_iterator
+#include <map>                     // for operator!=, _Rb_tree_const_iterator
+
 #include "nar-info.hh"
-#include "store-api.hh"
+#include "store-api.hh"            // for Store
+#include "content-address.hh"      // for parseContentAddressOpt, renderCont...
+#include "error.hh"                // for Error
+#include "types.hh"                // for StringSet, Strings
+#include "util.hh"                 // for string2Int, concatStringsSep, toke...
 
 namespace nix {
 

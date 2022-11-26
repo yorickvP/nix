@@ -1,17 +1,24 @@
 #pragma once
 
-#include "util.hh"
-#include "args.hh"
-#include "common-args.hh"
-#include "path.hh"
-#include "derived-path.hh"
+#include <signal.h>        // for siginfo_t, sig_atomic_t
+#include <stdint.h>        // for uint64_t
+#include <stdio.h>         // for stdout
+#include <exception>       // for exception
+#include <functional>      // for function
+#include <list>            // for operator==, _List_iterator, _List_iterator...
+#include <string>          // for string, allocator
+#include <vector>          // for vector
 
-#include <signal.h>
-
-#include <locale>
+#include "util.hh"         // for Pid, string2IntWithUnitPrefix
+#include "common-args.hh"  // for MixCommonArgs
+#include "path.hh"         // for StorePathSet
+#include "error.hh"        // for lvlInfo, Verbosity, UsageError
+#include "types.hh"        // for Strings
 
 
 namespace nix {
+struct DerivedPath;
+template <typename T> class ref;
 
 class Exit : public std::exception
 {
@@ -39,7 +46,6 @@ void printVersion(const std::string & programName);
 void printGCWarning();
 
 class Store;
-struct StorePathWithOutputs;
 
 void printMissing(
     ref<Store> store,

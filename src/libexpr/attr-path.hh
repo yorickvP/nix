@@ -1,11 +1,20 @@
 #pragma once
 
-#include "eval.hh"
+#include <stdint.h>     // for uint32_t
+#include <string>       // for string, basic_string
+#include <string_view>  // for string_view
+#include <utility>      // for pair
+#include <vector>       // for vector
 
-#include <string>
-#include <map>
+#include "error.hh"     // for Error, MakeError
 
 namespace nix {
+class Bindings;
+class EvalState;
+class PosIdx;
+class Suggestions;
+class Symbol;
+struct Value;
 
 MakeError(AttrPathNotFound, Error);
 MakeError(NoPositionInfo, Error);

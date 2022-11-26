@@ -1,31 +1,40 @@
-#include "command.hh"
-#include "shared.hh"
-#include "local-store.hh"
-#include "remote-store.hh"
-#include "util.hh"
-#include "serialise.hh"
-#include "archive.hh"
-#include "globals.hh"
-#include "derivations.hh"
-#include "finally.hh"
-#include "legacy.hh"
-#include "daemon.hh"
+#include <unistd.h>          // for STDIN_FILENO, chdir, getpid, setsid, STD...
+#include <signal.h>          // for sigaction, sigfillset, SIGCHLD, SIG_DFL
+#include <sys/wait.h>        // for waitpid, WNOHANG
+#include <sys/socket.h>      // for ucred, accept, getsockopt, SO_PEERCRED
+#include <sys/un.h>          // for sockaddr_un
+#include <errno.h>           // for errno, EINTR
+#include <pwd.h>             // for getpwuid, passwd, uid_t
+#include <grp.h>             // for getgrgid, getgrnam, group, gid_t
+#include <fcntl.h>           // for splice, SPLICE_F_MOVE, pid_t
+#include <stdlib.h>          // for exit
+#include <sys/select.h>      // for select, FD_ISSET, FD_SET, FD_ZERO, fd_set
+#include <boost/format.hpp>  // for basic_format, basic_altstringbuf<>::int_...
+#include <algorithm>         // for find, max, lexicographical_compare
+#include <climits>           // for SSIZE_MAX
+#include <cstring>           // for strlen, strncpy
+#include <list>              // for operator!=, _List_const_iterator, _List_...
+#include <map>               // for map<>::mapped_type
+#include <memory>            // for allocator, shared_ptr, __shared_ptr_access
+#include <optional>          // for operator!=, optional
+#include <string>            // for string, basic_string, char_traits, opera...
 
-#include <algorithm>
-#include <climits>
-#include <cstring>
-
-#include <unistd.h>
-#include <signal.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <sys/stat.h>
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <errno.h>
-#include <pwd.h>
-#include <grp.h>
-#include <fcntl.h>
+#include "command.hh"        // for registerCommand2, savedArgv, StoreCommand
+#include "shared.hh"         // for parseCmdLine, printVersion, showManPage
+#include "remote-store.hh"   // for RemoteStore::Connection, RemoteStore
+#include "util.hh"           // for AutoCloseFD, closeOnExec, getEnv, Proces...
+#include "serialise.hh"      // for FdSink, FdSource
+#include "globals.hh"        // for Settings, settings
+#include "legacy.hh"         // for MainFunction, RegisterLegacyCommand
+#include "daemon.hh"         // for processConnection, NotRecursive, Trusted
+#include "args.hh"           // for Command::Category
+#include "config.hh"         // for Setting, operator==, BaseSetting
+#include "error.hh"          // for SysError, Error, ErrorInfo
+#include "fmt.hh"            // for hintfmt, hintformat, format
+#include "logging.hh"        // for Logger, logError, printInfo
+#include "ref.hh"            // for ref, nix
+#include "store-api.hh"      // for openStore, Store, Store::Params
+#include "types.hh"          // for Strings, Path
 
 #if __APPLE__ || __FreeBSD__
 #include <sys/ucred.h>
@@ -347,6 +356,7 @@ struct CmdDaemon : StoreCommand
     {
         return
           #include "daemon.md"
+
           ;
     }
 

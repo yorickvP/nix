@@ -1,9 +1,22 @@
-#include <iostream>
-#include <cstdlib>
-#include <cstring>
-#include <climits>
-
-#include <setjmp.h>
+#include <signal.h>                  // for sigaction, size_t, sigprocmask
+#include <boost/format.hpp>          // for basic_altstringbuf<>::int_type
+#include <iostream>                  // for operator<<, ostream, basic_ostream
+#include <cstdlib>                   // for free, abort, malloc
+#include <cstring>                   // for strdup, strlen
+#include <climits>                   // for INT_MAX
+#include <atomic>                    // for atomic
+#include <cstdint>                   // for uint32_t
+#include <functional>                // for function
+#include <list>                      // for operator!=, list, _List_iterator
+#include <map>                       // for operator!=, map, _Rb_tree_const_...
+#include <memory>                    // for allocator, shared_ptr, __shared_...
+#include <optional>                  // for optional
+#include <set>                       // for set, set<>::iterator
+#include <string>                    // for string, operator==, char_traits
+#include <string_view>               // for string_view, operator!=, basic_s...
+#include <type_traits>               // for add_const<>::type
+#include <utility>                   // for pair, move, tuple_element<>::type
+#include <vector>                    // for vector
 
 #ifdef READLINE
 #include <readline/history.h>
@@ -15,31 +28,50 @@
 // For compatibility with these versions, we wrap the API here
 // (wrapping multiple times on newer versions is no problem).
 extern "C" {
-#include <editline.h>
+#include <editline.h>                // for read_history, readline, rl_depre...
 }
 #endif
 
-#include "ansicolor.hh"
-#include "shared.hh"
-#include "eval.hh"
-#include "eval-cache.hh"
-#include "eval-inline.hh"
-#include "attr-path.hh"
-#include "store-api.hh"
-#include "log-store.hh"
-#include "common-eval-args.hh"
-#include "get-drvs.hh"
-#include "derivations.hh"
-#include "globals.hh"
-#include "command.hh"
-#include "finally.hh"
-#include "markdown.hh"
-#include "local-fs-store.hh"
-#include "progress-bar.hh"
+#include "ansicolor.hh"              // for ANSI_NORMAL, ANSI_RED, ANSI_BLUE
+#include "shared.hh"                 // for RunPager
+#include "eval.hh"                   // for EvalState, DebugTrace, EvalSettings
+#include "eval-inline.hh"            // for EvalState::forceValue, EvalState...
+#include "attr-path.hh"              // for findPackageFilename
+#include "store-api.hh"              // for Store, openStore, getDefaultSubs...
+#include "log-store.hh"              // for LogStore
+#include "common-eval-args.hh"       // for lookupFileArg
+#include "get-drvs.hh"               // for getDerivation, DrvInfo
+#include "derivations.hh"            // for Derivation
+#include "globals.hh"                // for Settings, settings, nixVersion
+#include "command.hh"                // for editorFor, registerCommand, Inst...
+#include "finally.hh"                // for Finally
+#include "markdown.hh"               // for renderMarkdownToTerminal
+#include "local-fs-store.hh"         // for LocalFSStore
+#include "progress-bar.hh"           // for stopProgressBar
+#include "attr-set.hh"               // for Bindings, Attr, Bindings::iterator
+#include "config.hh"                 // for Setting, GlobalConfig, globalConfig
+#include "derived-path.hh"           // for DerivedPath, DerivedPath::Built
+#include "error.hh"                  // for Error, SysError, ErrPos, lvlError
+#include "experimental-features.hh"  // for Xp
+#include "fetchers.hh"               // for Input
+#include "flake/flake.hh"            // for callFlake, lockFlake, LockFlags
+#include "flake/flakeref.hh"         // for parseFlakeRef, FlakeRef
+#include "flake/lockfile.hh"         // for InputPath
+#include "fmt.hh"                    // for hintformat
+#include "libcmd/installables.hh"    // for Installable
+#include "logging.hh"                // for Logger, logger, warn, LoggerSett...
+#include "nixexpr.hh"                // for StaticEnv, StaticEnv::Vars, Asse...
+#include "path.hh"                   // for StorePath, OutputPathMap
+#include "ref.hh"                    // for ref
+#include "symbol-table.hh"           // for SymbolTable, SymbolStr, Symbol
+#include "types.hh"                  // for Path, StringSet, Strings, PathSet
+#include "url.hh"                    // for BadURL
+#include "util.hh"                   // for absPath, enumerate, iterable_wra...
+#include "value.hh"                  // for Value, Value::(anonymous), ListI...
 
 #if HAVE_BOEHMGC
 #define GC_INCLUDE_NEW
-#include <gc/gc_cpp.h>
+#include <gc/gc_cpp.h>               // for gc
 #endif
 
 namespace nix {
@@ -1094,6 +1126,7 @@ struct CmdRepl : InstallablesCommand
     {
         return
           #include "repl.md"
+
           ;
     }
 

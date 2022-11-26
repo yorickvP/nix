@@ -1,12 +1,16 @@
 #pragma once
 
-#include <functional>
-#include <string>
+#include <stddef.h>     // for size_t
+#include <stdint.h>     // for int64_t, uint64_t
+#include <string>       // for string
+#include <string_view>  // for string_view
 
-#include "error.hh"
+#include "error.hh"     // for Error, MakeError
+#include "fmt.hh"       // for hintfmt, hintformat
+#include "types.hh"     // for Path
 
-struct sqlite3;
-struct sqlite3_stmt;
+struct sqlite3; // IWYU pragma: keep
+struct sqlite3_stmt; // IWYU pragma: keep
 
 namespace nix {
 

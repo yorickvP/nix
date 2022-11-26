@@ -1,8 +1,19 @@
-#include "command.hh"
-#include "store-api.hh"
-#include "make-content-addressed.hh"
-#include "common-args.hh"
-#include "json.hh"
+#include <assert.h>                   // for assert
+#include <iostream>                   // for cout
+#include <map>                        // for operator!=, map, _Rb_tree_iterator
+#include <string>                     // for string, basic_string, allocator
+#include <utility>                    // for pair
+#include <vector>                     // for vector
+
+#include "command.hh"                 // for registerCommand2, CopyCommand
+#include "store-api.hh"               // for openStore, Store
+#include "make-content-addressed.hh"  // for makeContentAddressed
+#include "common-args.hh"             // for MixJSON
+#include "json.hh"                    // for JSONObject
+#include "installables.hh"            // for Realise, Realise::Outputs
+#include "logging.hh"                 // for Logger, notice
+#include "path.hh"                    // for StorePaths, StorePathSet
+#include "ref.hh"                     // for ref, nix
 
 using namespace nix;
 

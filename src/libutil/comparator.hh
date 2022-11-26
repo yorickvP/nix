@@ -1,5 +1,6 @@
 #pragma once
 
+#include <tuple>
 /* Awfull hacky generation of the comparison operators by doing a lexicographic
  * comparison between the choosen fields.
  *

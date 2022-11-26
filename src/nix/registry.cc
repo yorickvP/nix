@@ -1,11 +1,31 @@
-#include "command.hh"
-#include "common-args.hh"
-#include "shared.hh"
-#include "eval.hh"
-#include "flake/flake.hh"
-#include "store-api.hh"
-#include "fetchers.hh"
-#include "registry.hh"
+#include <stddef.h>                  // for size_t
+#include <boost/format.hpp>          // for basic_altstringbuf<>::int_type
+#include <map>                       // for map<>::mapped_type
+#include <memory>                    // for allocator, shared_ptr, __shared_...
+#include <optional>                  // for optional
+#include <string>                    // for string, operator!=, basic_string
+#include <string_view>               // for string_view
+#include <utility>                   // for pair
+#include <vector>                    // for vector
+
+#include "command.hh"                // for completeFlakeRef, registerCommand
+#include "fetchers.hh"               // for Input
+#include "registry.hh"               // for Registry, Registry::Entry, getCu...
+#include "args.hh"                   // for Command, Args, Command::Category
+#include "attrs.hh"                  // for Attrs, attrsToQuery, fetchers
+#include "common-eval-args.hh"       // for MixEvalArgs
+#include "error.hh"                  // for UsageError
+#include "experimental-features.hh"  // for Xp
+#include "flake/flakeref.hh"         // for parseFlakeRef, FlakeRef
+#include "globals.hh"                // for Settings, settings
+#include "logging.hh"                // for Logger, logger
+#include "ref.hh"                    // for make_ref, ref, nix
+#include "types.hh"                  // for Path
+#include "installables.hh"           // for flake
+
+namespace nix {
+class Store;
+}  // namespace nix
 
 using namespace nix;
 using namespace nix::flake;
@@ -61,6 +81,7 @@ struct CmdRegistryList : StoreCommand
     {
         return
           #include "registry-list.md"
+
           ;
     }
 
@@ -98,6 +119,7 @@ struct CmdRegistryAdd : MixEvalArgs, Command, RegistryCommand
     {
         return
           #include "registry-add.md"
+
           ;
     }
 
@@ -133,6 +155,7 @@ struct CmdRegistryRemove : RegistryCommand, Command
     {
         return
           #include "registry-remove.md"
+
           ;
     }
 
@@ -164,6 +187,7 @@ struct CmdRegistryPin : RegistryCommand, EvalCommand
     {
         return
           #include "registry-pin.md"
+
           ;
     }
 
@@ -219,6 +243,7 @@ struct CmdRegistry : virtual NixMultiCommand
     {
         return
           #include "registry.md"
+
           ;
     }
 

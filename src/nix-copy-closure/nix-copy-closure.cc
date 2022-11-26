@@ -1,6 +1,18 @@
-#include "shared.hh"
-#include "store-api.hh"
-#include "legacy.hh"
+#include <boost/format.hpp>  // for basic_format, basic_altstringbuf<>::int_...
+#include <list>              // for _List_iterator
+#include <map>               // for operator!=, _Rb_tree_const_iterator, _Rb...
+#include <string>            // for allocator, operator==, basic_string, cha...
+
+#include "shared.hh"         // for parseCmdLine, printVersion, showManPage
+#include "store-api.hh"      // for openStore, copyClosure, NoCheckSigs, NoS...
+#include "legacy.hh"         // for MainFunction, RegisterLegacyCommand
+#include "error.hh"          // for UsageError, lvlError
+#include "fmt.hh"            // for format
+#include "logging.hh"        // for Logger, printMsg
+#include "realisation.hh"    // for RealisedPath::Set, RealisedPath
+#include "ref.hh"            // for ref, nix
+#include "repair-flag.hh"    // for NoRepair
+#include "types.hh"          // for PathSet, Strings
 
 using namespace nix;
 

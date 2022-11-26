@@ -1,5 +1,17 @@
-#include "globals.hh"
+#include <unistd.h>          // for dup2, chdir, execv, STDIN_FILENO
+#include <boost/format.hpp>  // for basic_altstringbuf<>::int_type, basic_al...
+#include <list>              // for list, operator!=, _List_iterator, _List_...
+#include <string>            // for basic_string, string, to_string
+#include <string_view>       // for string_view
+#include <utility>           // for pair
+#include <vector>            // for vector
+#include <memory>            // for __alloc_traits<>::value_type
+
+#include "globals.hh"        // for Settings, settings
 #include "hook-instance.hh"
+#include "config.hh"         // for AbstractConfig::SettingInfo, PathSetting
+#include "error.hh"          // for SysError, Error
+#include "types.hh"          // for Strings
 
 namespace nix {
 

@@ -1,9 +1,19 @@
-#include "machines.hh"
-#include "util.hh"
-#include "globals.hh"
-#include "store-api.hh"
+#include <errno.h>                 // for ENOENT
+#include <stddef.h>                // for size_t
+#include <boost/lexical_cast.hpp>  // for bad_lexical_cast
+#include <algorithm>               // for all_of, find, transform
+#include <iterator>                // for back_insert_iterator, end, back_in...
+#include <map>                     // for map<>::mapped_type
+#include <memory>                  // for __alloc_traits<>::value_type, allo...
+#include <optional>                // for optional
 
-#include <algorithm>
+#include "machines.hh"
+#include "util.hh"                 // for hasPrefix, tokenizeString, trim
+#include "globals.hh"              // for Settings, settings
+#include "store-api.hh"            // for Store::Params, openStore, Store
+#include "config.hh"               // for Setting
+#include "error.hh"                // for Error, SysError
+#include "logging.hh"              // for Logger, debug
 
 namespace nix {
 

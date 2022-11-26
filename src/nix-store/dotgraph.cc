@@ -1,8 +1,16 @@
-#include "dotgraph.hh"
-#include "util.hh"
-#include "store-api.hh"
+#include <boost/format.hpp>  // for basic_altstringbuf<>::int_type, basic_al...
+#include <iostream>          // for operator<<, cout, ostream
+#include <map>               // for operator!=, _Rb_tree_const_iterator, _Rb...
+#include <string>            // for string, allocator, basic_string, char_tr...
+#include <string_view>       // for string_view
+#include <utility>           // for move, pair
+#include <vector>            // for vector
 
-#include <iostream>
+#include "dotgraph.hh"
+#include "store-api.hh"      // for Store
+#include "fmt.hh"            // for fmt
+#include "path-info.hh"      // for ValidPathInfo
+#include "ref.hh"            // for ref
 
 
 using std::cout;

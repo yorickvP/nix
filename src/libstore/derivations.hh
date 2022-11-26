@@ -1,17 +1,23 @@
 #pragma once
 
-#include "path.hh"
-#include "types.hh"
-#include "hash.hh"
-#include "content-address.hh"
-#include "repair-flag.hh"
-#include "sync.hh"
+#include <map>                 // for map, map<>::value_compare
+#include <variant>             // for variant, variant<>::variant
+#include <optional>            // for optional
+#include <set>                 // for set
+#include <string>              // for string, basic_string, operator<
+#include <string_view>         // for string_view
+#include <utility>             // for pair, move
 
-#include <map>
-#include <variant>
+#include "path.hh"             // for StorePath, StorePathSet
+#include "types.hh"            // for StringSet, Path, StringPairs, Strings
+#include "hash.hh"             // for Hash, HashType
+#include "content-address.hh"  // for FixedOutputHash, FileIngestionMethod
+#include "repair-flag.hh"      // for NoRepair, RepairFlag
+#include "sync.hh"             // for Sync
 
 
 namespace nix {
+class Store;
 
 
 /* Abstract syntax of derivations. */
@@ -212,7 +218,6 @@ struct Derivation : BasicDerivation
 };
 
 
-class Store;
 
 /* Write a derivation to the Nix store, and return its path. */
 StorePath writeDerivation(Store & store,

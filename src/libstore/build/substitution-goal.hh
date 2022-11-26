@@ -1,12 +1,30 @@
 #pragma once
 
-#include "lock.hh"
-#include "store-api.hh"
-#include "goal.hh"
+#include <stdint.h>            // for uint64_t
+#include <stdlib.h>            // for abort
+#include <future>
+#include <list>                // for list
+#include <memory>              // for allocator, unique_ptr, shared_ptr
+#include <optional>            // for optional, nullopt
+#include <string>              // for string, char_traits, operator+
+#include <string_view>         // for string_view
+#include <thread>              // for thread
+
+#include "store-api.hh"        // for Store
+#include "goal.hh"             // for Goal, Goal::ExitCode
+#include "build-result.hh"     // for BuildResult, BuildResult::Status
+#include "content-address.hh"  // for ContentAddress
+#include "error.hh"            // for Error
+#include "path.hh"             // for StorePath
+#include "ref.hh"              // for ref
+#include "repair-flag.hh"      // for NoRepair, RepairFlag
+#include "types.hh"            // for Path
+#include "util.hh"             // for MaintainCount (ptr only), Pipe
 
 namespace nix {
 
 class Worker;
+struct ValidPathInfo;
 
 struct PathSubstitutionGoal : public Goal
 {

@@ -1,11 +1,22 @@
-#include "command.hh"
-#include "store-api.hh"
-#include "local-fs-store.hh"
-#include "derivations.hh"
-#include "nixexpr.hh"
-#include "profiles.hh"
+#include <nlohmann/json.hpp>           // for basic_json
+#include <gc/gc_allocator.h>           // for traceable_allocator
+#include <stdlib.h>                    // for getenv, unsetenv, size_t
+#include <boost/format.hpp>            // for basic_altstringbuf<>::int_type
+#include <algorithm>                   // for reverse
+#include <list>                        // for list
+#include <variant>                     // for visit
 
-#include <nlohmann/json.hpp>
+#include "command.hh"
+#include "store-api.hh"                // for openStore, Store
+#include "profiles.hh"                 // for createGeneration, getDefaultPr...
+#include "error.hh"                    // for UsageError, Error
+#include "fmt.hh"                      // for fmt
+#include "libcmd/common-eval-args.hh"  // for MixEvalArgs, MixEvalArgs::cate...
+#include "libcmd/installables.hh"      // for Installable
+#include "util.hh"                     // for absPath, getEnv, stringsToChar...
+#include "local-fs-store.hh"           // for LocalFSStore
+
+// IWYU pragma: no_forward_declare nix::LocalFSStore
 
 extern char * * environ __attribute__((weak));
 

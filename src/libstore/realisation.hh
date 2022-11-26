@@ -1,11 +1,20 @@
 #pragma once
 
-#include "path.hh"
-#include <nlohmann/json_fwd.hpp>
-#include "comparator.hh"
-#include "crypto.hh"
+#include <nlohmann/json_fwd.hpp>  // for json
+#include <stddef.h>               // for size_t
+#include <map>                    // for map
+#include <set>                    // for set
+#include <string>                 // for string
+#include <variant>                // for variant
+
+#include "path.hh"                // for StorePath
+#include "comparator.hh"          // for GENERATE_CMP
+#include "crypto.hh"              // for PublicKeys, SecretKey
+#include "hash.hh"                // for Hash, Base16
+#include "types.hh"               // for StringSet
 
 namespace nix {
+class Store;
 
 struct DrvOutput {
     // The hash modulo of the derivation

@@ -1,18 +1,33 @@
-#include "crypto.hh"
-#include "fs-accessor.hh"
-#include "globals.hh"
-#include "derivations.hh"
-#include "store-api.hh"
-#include "util.hh"
-#include "nar-info-disk-cache.hh"
-#include "thread-pool.hh"
-#include "json.hh"
-#include "url.hh"
-#include "archive.hh"
-#include "callback.hh"
-#include "remote-store.hh"
+#include <assert.h>                  // for assert
+#include <unistd.h>                  // for access, getuid, R_OK, W_OK
+#include <boost/format.hpp>          // for basic_altstringbuf<>::int_type
+#include <boost/lexical_cast.hpp>    // for bad_lexical_cast
+#include <regex>                     // for smatch, regex_match, match_resul...
+#include <condition_variable>        // for condition_variable
+#include <cstdint>                   // for uint64_t
+#include <exception>                 // for current_exception, exception_ptr
+#include <future>                    // for future, promise
+#include <ostream>                   // for basic_ios
+#include <type_traits>               // for remove_reference<>::type, add_co...
+#include <variant>                   // for visit, get_if
+#include <algorithm>                 // for reverse
 
-#include <regex>
+#include "crypto.hh"                 // for verifyDetached, PublicKeys, Secr...
+#include "fs-accessor.hh"            // for FSAccessor
+#include "globals.hh"                // for Settings, settings
+#include "derivations.hh"            // for Derivation, outputPathName, pars...
+#include "store-api.hh"
+#include "util.hh"                   // for absPath, pathExists, checkInterrupt
+#include "nar-info-disk-cache.hh"    // for NarInfoDiskCache, NarInfoDiskCac...
+#include "thread-pool.hh"            // for processGraph, ThreadPool
+#include "json.hh"                   // for JSONObject, JSONList, JSONPlaceh...
+#include "url.hh"                    // for ParsedURL, decodeQuery, parseURL
+#include "archive.hh"                // for dumpPath, parseDump, RetrieveReg...
+#include "callback.hh"               // for Callback
+#include "derived-path.hh"           // for DerivedPath, DerivedPath::Opaque
+#include "experimental-features.hh"  // for Xp, MissingExperimentalFeature
+#include "fmt.hh"                    // for fmt, format
+#include "nar-info.hh"               // for NarInfo
 
 namespace nix {
 
@@ -1309,8 +1324,8 @@ Derivation Store::readInvalidDerivation(const StorePath & drvPath)
 }
 
 
-#include "local-store.hh"
-#include "uds-remote-store.hh"
+#include "local-store.hh"            // for LocalStore
+#include "uds-remote-store.hh"       // for UDSRemoteStore
 
 
 namespace nix {

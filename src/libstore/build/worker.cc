@@ -1,13 +1,34 @@
-#include "machines.hh"
-#include "worker.hh"
-#include "substitution-goal.hh"
-#include "drv-output-substitution-goal.hh"
-#include "local-derivation-goal.hh"
-#include "hook-instance.hh"
+#include <poll.h>                           // for pollfd, poll, POLLIN
+#include <assert.h>                         // for assert
+#include <errno.h>                          // for errno, EINTR, EIO
+#include <unistd.h>                         // for read, ssize_t
+#include <boost/format.hpp>                 // for basic_altstringbuf<>::int...
+#include <algorithm>                        // for min, find_if
+#include <ctime>                            // for time_t, size_t
+#include <iterator>                         // for next
+#include <string>                           // for string, basic_string
+#include <utility>                          // for pair
+#include <vector>                           // for vector, max
 
-#include <poll.h>
+#include "machines.hh"                      // for getMachines, Machines
+#include "worker.hh"
+#include "substitution-goal.hh"             // for PathSubstitutionGoal
+#include "drv-output-substitution-goal.hh"  // for DrvOutputSubstitutionGoal
+#include "local-derivation-goal.hh"         // for LocalDerivationGoal
+#include "hook-instance.hh"                 // for HookInstance
+#include "config.hh"                        // for Setting
+#include "derivation-goal.hh"               // for DerivationGoal, map
+#include "derived-path.hh"                  // for DerivedPath, DerivedPath:...
+#include "error.hh"                         // for Error, SysError, lvlVomit
+#include "globals.hh"                       // for Settings, settings, MaxBu...
+#include "hash.hh"                          // for Hash, hashPath, HashResult
+#include "local-store.hh"                   // for LocalStore
+#include "path-info.hh"                     // for ValidPathInfo
+#include "ref.hh"                           // for ref
+#include "util.hh"                          // for checkInterrupt, get, path...
 
 namespace nix {
+struct BasicDerivation;
 
 Worker::Worker(Store & store, Store & evalStore)
     : act(*logger, actRealise)

@@ -1,16 +1,55 @@
+#include <assert.h>                  // for assert
+#include <stdint.h>                  // for uint8_t, uint64_t
+#include <stdlib.h>                  // for abort, size_t
+#include <time.h>                    // for time_t
+#include <boost/format.hpp>          // for basic_altstringbuf<>::int_type
+#include <algorithm>                 // for equal
+#include <atomic>                    // for atomic
+#include <exception>                 // for exception
+#include <list>                      // for list, operator!=, _List_iterator
+#include <map>                       // for operator!=, _Rb_tree_iterator
+#include <memory>                    // for allocator, shared_ptr, make_unique
+#include <new>                       // for bad_alloc
+#include <optional>                  // for optional, nullopt
+#include <set>                       // for set, operator!=
+#include <sstream>                   // for stringstream, basic_stringstream...
+#include <string>                    // for string, basic_string, operator==
+#include <string_view>               // for string_view
+#include <unordered_set>             // for _Node_iterator, operator!=, _Nod...
+#include <utility>                   // for pair, move, tuple_element<>::type
+#include <variant>                   // for visit
+#include <vector>                    // for vector, max
+
 #include "daemon.hh"
-#include "monitor-fd.hh"
-#include "worker-protocol.hh"
-#include "build-result.hh"
-#include "store-api.hh"
-#include "store-cast.hh"
-#include "gc-store.hh"
-#include "log-store.hh"
-#include "path-with-outputs.hh"
-#include "finally.hh"
-#include "archive.hh"
-#include "derivations.hh"
-#include "args.hh"
+#include "monitor-fd.hh"             // for MonitorFdHup
+#include "worker-protocol.hh"        // for write, read, GET_PROTOCOL_MINOR
+#include "build-result.hh"           // for BuildResult
+#include "store-api.hh"              // for Store, BuildMode, CheckSigs, NoC...
+#include "store-cast.hh"             // for require
+#include "gc-store.hh"               // for GcStore, GCOptions, Roots, GCRes...
+#include "log-store.hh"              // for LogStore
+#include "path-with-outputs.hh"      // for parsePathWithOutputs, StorePathW...
+#include "finally.hh"                // for Finally
+#include "archive.hh"                // for parseDump, RetrieveRegularNARSink
+#include "derivations.hh"            // for Derivation, BasicDerivation, Der...
+#include "config.hh"                 // for Setting
+#include "content-address.hh"        // for FileIngestionMethod, FixedOutput...
+#include "derived-path.hh"           // for DerivedPath
+#include "error.hh"                  // for Error, Verbosity, UsageError
+#include "experimental-features.hh"  // for parseFeatures
+#include "fmt.hh"                    // for FormatOrString
+#include "globals.hh"                // for Settings, settings, MaxBuildJobs...
+#include "hash.hh"                   // for HashType, parseHashType, Hash
+#include "logging.hh"                // for Logger, Logger::Field, Logger::F...
+#include "path-info.hh"              // for ValidPathInfo, SubstitutablePath...
+#include "path.hh"                   // for StorePath, StorePathSet, StorePa...
+#include "realisation.hh"            // for Realisation, DrvOutput
+#include "ref.hh"                    // for ref
+#include "repair-flag.hh"            // for RepairFlag, NoRepair
+#include "serialise.hh"              // for operator<<, readString, readInt
+#include "sync.hh"                   // for Sync<>::Lock, Sync
+#include "types.hh"                  // for Strings, StringSet, StringMap, Path
+#include "util.hh"                   // for tokenizeString, EndOfFile, absPath
 
 namespace nix::daemon {
 

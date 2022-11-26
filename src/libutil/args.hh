@@ -1,12 +1,23 @@
 #pragma once
 
-#include <iostream>
-#include <map>
-#include <memory>
+#include <nlohmann/json_fwd.hpp>  // for json
+#include <stddef.h>               // for size_t
+#include <map>                    // for map, map<>::value_compare
+#include <memory>                 // for allocator, shared_ptr
+#include <functional>             // for function
+#include <limits>                 // for numeric_limits
+#include <list>                   // for list
+#include <optional>               // for optional
+#include <set>                    // for set
+#include <string>                 // for string, basic_string, operator<
+#include <string_view>            // for string_view
+#include <type_traits>            // for remove_reference, remove_reference<...
+#include <utility>                // for move, pair
+#include <vector>                 // for vector, max
 
-#include <nlohmann/json_fwd.hpp>
-
-#include "util.hh"
+#include "util.hh"                // for string2IntWithUnitPrefix
+#include "libutil/ref.hh"         // for ref
+#include "libutil/types.hh"       // for Strings
 
 namespace nix {
 

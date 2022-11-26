@@ -1,19 +1,47 @@
-#include "fetchers.hh"
-#include "cache.hh"
-#include "globals.hh"
-#include "tarfile.hh"
-#include "store-api.hh"
-#include "url-parts.hh"
-#include "pathlocks.hh"
-#include "util.hh"
-#include "git.hh"
+#include <string.h>              // for strerror
+#include <sys/time.h>            // for timeval, time_t, lutimes
+#include <assert.h>              // for assert
+#include <errno.h>               // for errno
+#include <stdlib.h>              // for WEXITSTATUS, WIFEXITED
+#include <sys/stat.h>            // for stat, uid_t, S_ISDIR, st_mtime
+#include <time.h>                // for time
+#include <boost/format.hpp>      // for basic_altstringbuf<>::int_type, basi...
+#include <regex>                 // for regex_search, match_results<>::_Base...
+#include <cstdint>               // for uint64_t
+#include <list>                  // for list
+#include <map>                   // for map, operator!=, _Rb_tree_const_iter...
+#include <memory>                // for allocator, make_unique, unique_ptr
+#include <optional>              // for optional, operator==, operator!=
+#include <set>                   // for set
+#include <string>                // for string, basic_string, operator!=
+#include <string_view>           // for string_view, operator!=
+#include <type_traits>           // for remove_reference<>::type
+#include <utility>               // for move, tuple_element<>::type, pair
+#include <vector>                // for vector
 
-#include "fetch-settings.hh"
-
-#include <regex>
-#include <string.h>
-#include <sys/time.h>
-#include <sys/wait.h>
+#include "fetchers.hh"           // for Input, registerInputScheme, InputScheme
+#include "cache.hh"              // for getCache, Cache
+#include "globals.hh"            // for Settings, settings
+#include "tarfile.hh"            // for unpackTarfile
+#include "store-api.hh"          // for Store
+#include "url-parts.hh"          // for badGitRefRegex
+#include "pathlocks.hh"          // for PathLocks
+#include "util.hh"               // for runProgram, chomp, hasPrefix, pathEx...
+#include "git.hh"                // for LsRemoteRefLine, parseLsRemoteLine
+#include "fetch-settings.hh"     // for FetchSettings, fetchSettings
+#include "ansicolor.hh"          // for ANSI_BOLD, ANSI_NORMAL
+#include "config.hh"             // for Setting
+#include "content-address.hh"    // for FileIngestionMethod, FileIngestionMe...
+#include "error.hh"              // for Error, UnimplementedError, lvlTalkative
+#include "fmt.hh"                // for fmt
+#include "hash.hh"               // for Hash, HashType, htSHA1, htSHA256
+#include "libfetchers/attrs.hh"  // for maybeGetBoolAttr, Attrs, getStrAttr
+#include "logging.hh"            // for warn, Logger, debug, Activity, actUn...
+#include "path.hh"               // for StorePath
+#include "ref.hh"                // for ref
+#include "serialise.hh"          // for sinkToSource, Sink (ptr only)
+#include "types.hh"              // for Path, Strings, OnStartup, Explicit
+#include "url.hh"                // for ParsedURL, parseURL, BadURL
 
 using namespace std::string_literals;
 

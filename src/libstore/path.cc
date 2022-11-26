@@ -1,6 +1,15 @@
-#include "store-api.hh"
+#include <sodium/randombytes.h>  // for randombytes_buf
+#include <map>                   // for operator!=, _Rb_tree_const_iterator
+#include <optional>              // for optional
+#include <string>                // for string, basic_string, allocator, ope...
+#include <string_view>           // for string_view, basic_string_view
 
-#include <sodium.h>
+#include "store-api.hh"          // for Store, BadStorePath
+#include "error.hh"              // for Error
+#include "hash.hh"               // for Hash, Base32, htSHA1
+#include "path.hh"               // for StorePath, StorePathSet, StorePath::...
+#include "types.hh"              // for PathSet, Path
+#include "util.hh"               // for baseNameOf, canonPath, dirOf, hasSuffix
 
 namespace nix {
 

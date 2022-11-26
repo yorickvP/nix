@@ -1,31 +1,60 @@
-#include "attr-path.hh"
-#include "common-eval-args.hh"
-#include "derivations.hh"
-#include "eval.hh"
-#include "get-drvs.hh"
-#include "globals.hh"
-#include "names.hh"
-#include "profiles.hh"
-#include "path-with-outputs.hh"
-#include "shared.hh"
-#include "store-api.hh"
-#include "local-fs-store.hh"
-#include "user-env.hh"
-#include "util.hh"
-#include "json.hh"
-#include "value-to-json.hh"
-#include "xml-writer.hh"
-#include "legacy.hh"
+#include <sys/stat.h>              // for stat, S_ISDIR, S_ISREG
+#include <unistd.h>                // for getuid, isatty, STDOUT_FILENO, size_t
+#include <assert.h>                // for assert
+#include <ctype.h>                 // for toupper
+#include <stdlib.h>                // for abort
+#include <boost/format.hpp>        // for basic_altstringbuf<>::int_type
+#include <boost/lexical_cast.hpp>  // for bad_lexical_cast
+#include <ctime>                   // for size_t, tm, localtime_r
+#include <algorithm>               // for partition, lexicographical_compare
+#include <iostream>                // for cout, ostream, operator<<, endl
+#include <functional>              // for function
+#include <list>                    // for operator!=, _List_iterator, list<>...
+#include <map>                     // for operator!=, map<>::mapped_type
+#include <memory>                  // for allocator, shared_ptr, __shared_pt...
+#include <optional>                // for optional, nullopt, operator==
+#include <set>                     // for set, set<>::iterator
+#include <string>                  // for string, operator==, basic_string
+#include <string_view>             // for string_view
+#include <utility>                 // for pair, move, tuple_element<>::type
+#include <vector>                  // for vector, max
 
-#include <cerrno>
-#include <ctime>
-#include <algorithm>
-#include <iostream>
-#include <sstream>
+#include "attr-path.hh"            // for findAlongAttrPath
+#include "common-eval-args.hh"     // for lookupFileArg, MixEvalArgs
+#include "eval.hh"                 // for EvalState
+#include "get-drvs.hh"             // for DrvInfo, DrvInfos, DrvInfo::Outputs
+#include "globals.hh"              // for Settings, settings
+#include "names.hh"                // for DrvName, compareVersions, DrvNames
+#include "profiles.hh"             // for GenerationNumber, optimisticLockPr...
+#include "shared.hh"               // for getArg, printMissing, LegacyArgs
+#include "store-api.hh"            // for Store, openStore, bmNormal, bmRepair
+#include "user-env.hh"             // for queryInstalled, createUserEnv
+#include "util.hh"                 // for absPath, string2Int, getHome, hasS...
+#include "json.hh"                 // for JSONObject
+#include "value-to-json.hh"        // for printValueAsJSON
+#include "xml-writer.hh"           // for XMLAttrs, XMLWriter, XMLOpenElement
+#include "legacy.hh"               // for MainFunction, RegisterLegacyCommand
+#include "pathlocks.hh"            // for PathLocks
+#include "ansicolor.hh"            // for ANSI_NORMAL, ANSI_RED
+#include "args.hh"                 // for argvToStrings
+#include "attr-set.hh"             // for Attr, Bindings, BindingsBuilder
+#include "config.hh"               // for Setting, operator==, BaseSetting
+#include "derived-path.hh"         // for DerivedPath, DerivedPath::Built
+#include "error.hh"                // for UsageError, Error, ErrPos, lvlTalk...
+#include "eval-inline.hh"          // for EvalState::allocValue
+#include "fmt.hh"                  // for fmt, format
+#include "logging.hh"              // for Logger, printInfo, warn, debug
+#include "nixexpr.hh"              // for AssertionError, Expr (ptr only)
+#include "path.hh"                 // for StorePathSet, StorePath, drvExtension
+#include "ref.hh"                  // for ref
+#include "repair-flag.hh"          // for RepairFlag, NoRepair, Repair
+#include "symbol-table.hh"         // for SymbolStr, SymbolTable
+#include "types.hh"                // for Strings, Path, StringSet, PathSet
+#include "value.hh"                // for Value, Value::(anonymous), ListIte...
+#include "suggestions.hh"          // for nix
+#include "local-fs-store.hh"       // for LocalFSStore
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
+// IWYU pragma: no_forward_declare nix::LocalFSStore
 
 using namespace nix;
 using std::cout;

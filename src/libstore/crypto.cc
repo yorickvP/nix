@@ -1,8 +1,13 @@
-#include "crypto.hh"
-#include "util.hh"
-#include "globals.hh"
+#include <sodium/crypto_sign.h>          // for crypto_sign_PUBLICKEYBYTES
+#include <sodium/crypto_sign_ed25519.h>  // for crypto_sign_ed25519_sk_to_pk
+#include <stddef.h>                      // for size_t
+#include <list>                          // for list, operator!=, _List_cons...
 
-#include <sodium.h>
+#include "crypto.hh"
+#include "util.hh"                       // for base64Decode, base64Encode
+#include "globals.hh"                    // for Settings, settings
+#include "config.hh"                     // for Setting
+#include "error.hh"                      // for Error, SysError
 
 namespace nix {
 

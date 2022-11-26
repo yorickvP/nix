@@ -1,15 +1,20 @@
 #pragma once
 
-#include "types.hh"
-#include "hash.hh"
-#include "fetchers.hh"
-#include "path-with-outputs.hh"
+#include <iosfwd>                // for ostream
+#include <optional>              // for optional
+#include <string>                // for string
+#include <tuple>                 // for tuple
+#include <utility>               // for pair, move
 
-#include <variant>
+#include "types.hh"              // for Path
+#include "fetchers.hh"           // for Input, Tree (ptr only)
+#include "path-with-outputs.hh"  // for OutputsSpec
+#include "attrs.hh"              // for Attrs
 
 namespace nix {
 
 class Store;
+template <typename T> class ref;
 
 typedef std::string FlakeId;
 

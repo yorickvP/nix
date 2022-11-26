@@ -1,12 +1,19 @@
 #pragma once
 
-#include <variant>
+#include <nlohmann/json_fwd.hpp>  // for json
+#include <variant>                // for variant
+#include <set>                    // for set
+#include <string>                 // for string, basic_string, operator<
+#include <string_view>            // for string_view
+#include <utility>                // for pair
+#include <vector>                 // for vector
 
-#include "path.hh"
-#include "derived-path.hh"
-#include "nlohmann/json_fwd.hpp"
+#include "path.hh"                // for StorePath
+#include "derived-path.hh"        // for DerivedPath
+#include "types.hh"               // for StringSet
 
 namespace nix {
+class Store;
 
 struct StorePathWithOutputs
 {
@@ -24,7 +31,6 @@ std::vector<DerivedPath> toDerivedPaths(const std::vector<StorePathWithOutputs>)
 
 std::pair<std::string_view, StringSet> parsePathWithOutputs(std::string_view s);
 
-class Store;
 
 /* Split a string specifying a derivation and a set of outputs
    (/nix/store/hash-foo!out1,out2,...) into the derivation path

@@ -1,50 +1,82 @@
+#include <sys/un.h>                  // for sockaddr_un
+#include <fcntl.h>                   // for open, O_NOCTTY, O_RDONLY, O_RDWR
+#include <termios.h>                 // for cfmakeraw, tcgetattr, tcsetattr
+#include <unistd.h>                  // for _exit, getuid, chown, getgid, chdir
+#include <sys/mman.h>                // for mmap, MAP_ANONYMOUS, MAP_FAILED
+#include <sys/utsname.h>             // for uname, utsname
+#include <sys/resource.h>            // for setrlimit, RLIMIT_CORE, RLIM_INF...
+#include <sys/socket.h>              // for accept, shutdown, socket, PF_INET
+#include <assert.h>                  // for assert
+#include <errno.h>                   // for errno, EPERM, EINVAL, ENOTSUP
+#include <netinet/in.h>              // for IPPROTO_IP
+#include <signal.h>                  // for kill, SIGCHLD, SIGKILL
+#include <stdlib.h>                  // for posix_openpt, ptsname, unlockpt
+#include <string.h>                  // for strcmp, strcpy
+#include <sys/stat.h>                // for stat, chmod, mkdir, S_ISDIR, lstat
+#include <syscall.h>                 // for SYS_pivot_root
+#include <time.h>                    // for time
+#include <nlohmann/json.hpp>         // for basic_json, json, basic_json<>::...
+#include <boost/format.hpp>          // for basic_altstringbuf<>::int_type
+#include <boost/lexical_cast.hpp>    // for bad_lexical_cast
+#include <regex>                     // for regex_match, match_results<>::_B...
+#include <queue>                     // for queue
+#include <algorithm>                 // for reverse, copy, equal, lexicograp...
+#include <cstdint>                   // for uint64_t
+#include <exception>                 // for exception_ptr, make_exception_ptr
+#include <initializer_list>          // for initializer_list
+#include <iostream>                  // for cerr, ostream
+#include <list>                      // for operator!=, list, _List_iterator
+#include <optional>                  // for optional, nullopt
+#include <type_traits>               // for remove_reference<>::type, remove...
+#include <utility>                   // for pair, move, make_pair, operator==
+#include <variant>                   // for variant, visit
+
 #include "local-derivation-goal.hh"
-#include "gc-store.hh"
-#include "hook-instance.hh"
-#include "worker.hh"
-#include "builtins.hh"
-#include "builtins/buildenv.hh"
-#include "references.hh"
-#include "finally.hh"
-#include "util.hh"
-#include "archive.hh"
-#include "json.hh"
-#include "compression.hh"
-#include "daemon.hh"
-#include "worker-protocol.hh"
-#include "topo-sort.hh"
-#include "callback.hh"
-#include "json-utils.hh"
-
-#include <regex>
-#include <queue>
-
-#include <sys/un.h>
-#include <fcntl.h>
-#include <termios.h>
-#include <unistd.h>
-#include <sys/mman.h>
-#include <sys/utsname.h>
-#include <sys/resource.h>
-#include <sys/socket.h>
+#include "gc-store.hh"               // for Roots, GCOptions (ptr only), GCR...
+#include "worker.hh"                 // for Worker
+#include "builtins.hh"               // for builtinFetchurl, builtinUnpackCh...
+#include "builtins/buildenv.hh"      // for builtinBuildenv
+#include "references.hh"             // for HashModuloSink, RewritingSink
+#include "finally.hh"                // for Finally
+#include "util.hh"                   // for AutoCloseFD, pathExists, writeFile
+#include "archive.hh"                // for dumpPath, restorePath, copyPath
+#include "daemon.hh"                 // for processConnection, NotTrusted
+#include "topo-sort.hh"              // for topoSort
+#include "callback.hh"               // for Callback
+#include "json-utils.hh"             // for get
+#include "build-result.hh"           // for BuildResult, BuildResult::InputR...
+#include "config.hh"                 // for Setting, PathSetting, operator<<
+#include "content-address.hh"        // for ContentAddress, FixedOutputHash
+#include "derivations.hh"            // for Derivation, DerivationOutput
+#include "derived-path.hh"           // for DerivedPath, DerivedPath::Built
+#include "error.hh"                  // for SysError, Error, ErrPos, lvlChatty
+#include "experimental-features.hh"  // for Xp
+#include "fmt.hh"                    // for fmt, hintfmt, hintformat, format
+#include "globals.hh"                // for Settings, settings, MaxBuildJobs...
+#include "hash.hh"                   // for Hash, hashPath, htSHA256, HashRe...
+#include "local-fs-store.hh"         // for LocalFSStoreConfig, LocalFSStore
+#include "local-store.hh"            // for LocalStore, canonicalisePathMeta...
+#include "logging.hh"                // for Logger, debug, Activity, printError
+#include "parsed-derivations.hh"     // for ParsedDerivation, writeStructure...
+#include "pathlocks.hh"              // for PathLocks
+#include "ref.hh"                    // for ref, make_ref
+#include "repair-flag.hh"            // for RepairFlag, NoRepair
+#include "serialise.hh"              // for FdSink, StringSink, FdSource
+#include "store-api.hh"              // for Store, BuildError, Store::Params
 
 #if HAVE_STATVFS
-#include <sys/statvfs.h>
+#include <sys/statvfs.h>             // for statvfs
 #endif
 
 /* Includes required for chroot support. */
 #if __linux__
-#include <sys/ioctl.h>
-#include <net/if.h>
-#include <netinet/ip.h>
-#include <sys/personality.h>
-#include <sys/mman.h>
-#include <sched.h>
-#include <sys/param.h>
-#include <sys/mount.h>
-#include <sys/syscall.h>
+#include <sys/ioctl.h>               // for ioctl, SIOCSIFFLAGS
+#include <net/if.h>                  // for ifreq, IFF_LOOPBACK, IFF_RUNNING
+#include <sys/personality.h>         // for personality, ADDR_NO_RANDOMIZE
+#include <sched.h>                   // for clone, setns, unshare, CLONE_NEWNS
+#include <sys/mount.h>               // for mount, MS_BIND, umount2, MS_REC
 #if HAVE_SECCOMP
-#include <seccomp.h>
+#include <seccomp.h>                 // for seccomp_arch_add, seccomp_rule_add
 #endif
 #define pivot_root(new_root, put_old) (syscall(SYS_pivot_root, new_root, put_old))
 #endif
@@ -54,8 +86,7 @@
 #include <sys/sysctl.h>
 #endif
 
-#include <pwd.h>
-#include <grp.h>
+#include <grp.h>                     // for setgroups
 
 namespace nix {
 

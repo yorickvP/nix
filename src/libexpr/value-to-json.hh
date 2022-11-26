@@ -1,14 +1,17 @@
 #pragma once
 
-#include "nixexpr.hh"
-#include "eval.hh"
 
-#include <string>
-#include <map>
+
+#include <iosfwd>    // for ostream
+
+#include "types.hh"  // for PathSet
 
 namespace nix {
 
 class JSONPlaceholder;
+class EvalState;
+class PosIdx;
+struct Value;
 
 void printValueAsJSON(EvalState & state, bool strict,
     Value & v, const PosIdx pos, JSONPlaceholder & out, PathSet & context, bool copyToStore = true);

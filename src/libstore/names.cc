@@ -1,7 +1,14 @@
-#include "names.hh"
-#include "util.hh"
+#include <ctype.h>                 // for isdigit, isalpha
+#include <stddef.h>                // for size_t
+#include <boost/lexical_cast.hpp>  // for bad_lexical_cast
+#include <regex>                   // for regex, regex_match, match_results<...
+#include <map>                     // for map
+#include <optional>                // for optional
+#include <sstream>                 // for basic_stringbuf<>::int_type, basic...
+#include <vector>                  // for vector
 
-#include <regex>
+#include "names.hh"
+#include "util.hh"                 // for string2Int
 
 
 namespace nix {

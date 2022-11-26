@@ -1,13 +1,10 @@
 #pragma once
 
-#include "types.hh"
-#include "config.hh"
-#include "util.hh"
+#include <map>        // for allocator, map
+#include <string>     // for string
 
-#include <map>
-#include <limits>
-
-#include <sys/types.h>
+#include "types.hh"   // for StringMap
+#include "config.hh"  // for Setting, Config
 
 namespace nix {
 

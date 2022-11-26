@@ -1,11 +1,26 @@
 #pragma once
 
-#include <memory>
+#include <stdint.h>          // for uint64_t
+#include <string.h>          // for size_t, memcpy
+#include <memory>            // for allocator, shared_ptr, unique_ptr, __sha...
+#include <algorithm>         // for min
+#include <exception>         // for exception_ptr, rethrow_exception
+#include <functional>        // for function
+#include <istream>           // for basic_istream, basic_ios, basic_istream:...
+#include <limits>            // for numeric_limits
+#include <string>            // for string
+#include <string_view>       // for string_view
+#include <typeinfo>          // for type_info
+#include <utility>           // for move
+#include <vector>            // for vector
 
-#include "types.hh"
-#include "util.hh"
+#include "types.hh"          // for StringSet, Strings
+#include "util.hh"           // for EndOfFile, ignoreException
+#include "libutil/error.hh"  // for Error, MakeError
 
-namespace boost::context { struct stack_context; }
+namespace boost::context {
+struct stack_context;
+}  // namespace boost::context
 
 namespace nix {
 

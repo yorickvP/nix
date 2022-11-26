@@ -1,24 +1,49 @@
-#include <algorithm>
+#include <sys/socket.h>              // for sockaddr, AF_INET, AF_INET6
+#include <ifaddrs.h>                 // for ifaddrs, freeifaddrs, getifaddrs
+#include <netinet/in.h>              // for sockaddr_in6, IN6_IS_ADDR_LINKLOCAL
+#include <nlohmann/json.hpp>         // for basic_json<>::object_t, basic_json
+#include <assert.h>                  // for assert
+#include <sched.h>                   // for unshare, CLONE_NEWNS
+#include <unistd.h>                  // for getuid, isatty, STDERR_FILENO
+#include <boost/format.hpp>          // for basic_altstringbuf<>::int_type
+#include <functional>                // for function
+#include <iostream>                  // for operator<<, cout, ostream, basic...
+#include <limits>                    // for numeric_limits
+#include <list>                      // for operator==, list<>::iterator
+#include <map>                       // for map, map<>::mapped_type, _Rb_tre...
+#include <memory>                    // for allocator, shared_ptr, __shared_...
+#include <optional>                  // for optional
+#include <set>                       // for set
+#include <string>                    // for string, basic_string, operator<<
+#include <string_view>               // for string_view, operator==
+#include <utility>                   // for pair, move
+#include <vector>                    // for vector, max
 
-#include "command.hh"
-#include "common-args.hh"
-#include "eval.hh"
-#include "globals.hh"
-#include "legacy.hh"
-#include "shared.hh"
-#include "store-api.hh"
-#include "filetransfer.hh"
-#include "finally.hh"
-#include "loggers.hh"
-#include "markdown.hh"
-
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <ifaddrs.h>
-#include <netdb.h>
-#include <netinet/in.h>
-
-#include <nlohmann/json.hpp>
+#include "command.hh"                // for registerCommand, RegisterCommand
+#include "common-args.hh"            // for miscCategory, MixCommonArgs, log...
+#include "eval.hh"                   // for EvalState, EvalSettings, evalSet...
+#include "globals.hh"                // for Settings, settings
+#include "legacy.hh"                 // for RegisterLegacyCommand, RegisterL...
+#include "shared.hh"                 // for handleExceptions, initNix, print...
+#include "store-api.hh"              // for openStore
+#include "filetransfer.hh"           // for FileTransferSettings, fileTransf...
+#include "finally.hh"                // for Finally
+#include "loggers.hh"                // for setLogFormat
+#include "markdown.hh"               // for renderMarkdownToTerminal
+#include "args.hh"                   // for Command::Category, MultiCommand
+#include "attr-set.hh"               // for Attr, Bindings, BindingsBuilder
+#include "config.hh"                 // for Setting
+#include "error.hh"                  // for UsageError, SysError, Error, lvl...
+#include "eval-inline.hh"            // for EvalState::allocValue
+#include "experimental-features.hh"  // for ExperimentalFeature, Xp
+#include "fmt.hh"                    // for fmt
+#include "logging.hh"                // for warn, Logger, logger, verbosity
+#include "nixexpr.hh"                // for noPos
+#include "ref.hh"                    // for ref
+#include "symbol-table.hh"           // for SymbolStr, SymbolTable
+#include "types.hh"                  // for Strings
+#include "util.hh"                   // for concatStringsSep, trim, baseNameOf
+#include "value.hh"                  // for Value, Value::(anonymous)
 
 extern std::string chrootHelperName;
 
@@ -156,6 +181,7 @@ struct NixArgs : virtual MultiCommand, virtual MixCommonArgs
     {
         return
           #include "nix.md"
+
           ;
     }
 
@@ -179,6 +205,7 @@ static void showHelp(std::vector<std::string> subcommand, MultiCommand & topleve
     auto vGenerateManpage = state.allocValue();
     state.eval(state.parseExprFromString(
         #include "generate-manpage.nix.gen.hh"
+
         , "/"), *vGenerateManpage);
 
     auto vUtils = state.allocValue();
@@ -186,6 +213,7 @@ static void showHelp(std::vector<std::string> subcommand, MultiCommand & topleve
         "/utils.nix", "/utils.nix",
         state.parseExprFromString(
             #include "utils.nix.gen.hh"
+
             , "/"),
         *vUtils);
 
@@ -226,6 +254,7 @@ struct CmdHelp : Command
     {
         return
           #include "help.md"
+
           ;
     }
 

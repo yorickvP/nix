@@ -1,14 +1,33 @@
-#include "progress-bar.hh"
-#include "util.hh"
-#include "sync.hh"
-#include "store-api.hh"
-#include "names.hh"
+#include <assert.h>            // for assert
+#include <unistd.h>            // for isatty, STDIN_FILENO, size_t
+#include <boost/format.hpp>    // for basic_altstringbuf<>::int_type, basic_...
+#include <map>                 // for allocator, map, operator!=, _Rb_tree_i...
+#include <thread>              // for thread
+#include <iostream>            // for char_traits, operator<<, stringstream
+#include <chrono>              // for duration, milliseconds, operator<, ope...
+#include <algorithm>           // for min
+#include <condition_variable>  // for condition_variable
+#include <cstdint>             // for uint64_t
+#include <iterator>            // for prev
+#include <limits>              // for numeric_limits
+#include <list>                // for _List_iterator, list<>::iterator, list
+#include <memory>              // for allocator_traits<>::value_type
+#include <optional>            // for optional
+#include <ratio>               // for ratio
+#include <string>              // for string, operator+, basic_string, opera...
+#include <string_view>         // for string_view, basic_string_view, operat...
+#include <utility>             // for pair
+#include <vector>              // for vector, max
 
-#include <atomic>
-#include <map>
-#include <thread>
-#include <iostream>
-#include <chrono>
+#include "progress-bar.hh"
+#include "util.hh"             // for filterANSIEscapes, hasSuffix, baseNameOf
+#include "sync.hh"             // for Sync<>::Lock, Sync
+#include "names.hh"            // for DrvName
+#include "ansicolor.hh"        // for ANSI_NORMAL, ANSI_BOLD, ANSI_GREEN
+#include "config.hh"           // for Setting
+#include "error.hh"            // for Verbosity, showErrorInfo, ErrorInfo
+#include "fmt.hh"              // for fmt, FormatOrString
+#include "logging.hh"          // for ActivityType, ActivityId, writeToStderr
 
 namespace nix {
 

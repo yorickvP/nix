@@ -1,10 +1,23 @@
-#include "command.hh"
-#include "shared.hh"
-#include "eval.hh"
-#include "attr-path.hh"
-#include "progress-bar.hh"
+#include <unistd.h>          // for execvp
+#include <boost/format.hpp>  // for basic_altstringbuf<>::int_type, basic_al...
+#include <list>              // for list, operator!=, _List_iterator, _List_...
+#include <memory>            // for allocator, __shared_ptr_access, shared_ptr
+#include <string>            // for char_traits, operator+, string, basic_st...
+#include <vector>            // for vector
 
-#include <unistd.h>
+#include "command.hh"        // for editorFor, registerCommand, InstallableC...
+#include "attr-path.hh"      // for findPackageFilename, NoPositionInfo
+#include "progress-bar.hh"   // for stopProgressBar
+#include "args.hh"           // for Command::Category
+#include "error.hh"          // for Error, SysError
+#include "installables.hh"   // for Installable
+#include "ref.hh"            // for ref, nix
+#include "util.hh"           // for restoreProcessContext, stringsToCharPtrs
+
+namespace nix {
+class EvalState;
+class Store;
+}  // namespace nix
 
 using namespace nix;
 
@@ -19,6 +32,7 @@ struct CmdEdit : InstallableCommand
     {
         return
           #include "edit.md"
+
           ;
     }
 

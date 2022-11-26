@@ -1,8 +1,16 @@
 #pragma once
 
-#include "flakeref.hh"
+#include <nlohmann/json_fwd.hpp>  // for json
+#include <iosfwd>                 // for ostream
+#include <map>                    // for map
+#include <memory>                 // for shared_ptr, make_shared, enable_sha...
+#include <string>                 // for basic_string, string
+#include <string_view>            // for string_view
+#include <variant>                // for variant
+#include <vector>                 // for max, vector
 
-#include <nlohmann/json_fwd.hpp>
+#include "flakeref.hh"            // for FlakeId, FlakeRef
+#include "types.hh"               // for Path
 
 namespace nix {
 class Store;

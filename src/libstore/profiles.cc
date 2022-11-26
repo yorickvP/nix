@@ -1,13 +1,22 @@
-#include "profiles.hh"
-#include "store-api.hh"
-#include "local-fs-store.hh"
-#include "util.hh"
+#include <sys/stat.h>              // for stat, st_mtime
+#include <unistd.h>                // for getuid
+#include <stdio.h>                 // for remove
+#include <assert.h>                // for assert
+#include <boost/format.hpp>        // for basic_altstringbuf<>::int_type
+#include <boost/lexical_cast.hpp>  // for bad_lexical_cast
+#include <memory>                  // for allocator_traits<>::value_type
+#include <vector>                  // for vector
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <errno.h>
-#include <stdio.h>
+#include "profiles.hh"
+#include "local-fs-store.hh"       // for LocalFSStore
+#include "util.hh"                 // for dirOf, readLink, pathExists, baseN...
+#include "error.hh"                // for Error, UsageError, SysError
+#include "fmt.hh"                  // for fmt, format
+#include "globals.hh"              // for Settings, settings
+#include "logging.hh"              // for Logger, notice
+#include "path.hh"                 // for StorePath
+#include "pathlocks.hh"            // for PathLocks
+#include "ref.hh"                  // for ref
 
 
 namespace nix {

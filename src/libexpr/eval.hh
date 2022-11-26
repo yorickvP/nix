@@ -1,17 +1,28 @@
 #pragma once
 
-#include "attr-set.hh"
-#include "types.hh"
-#include "value.hh"
-#include "nixexpr.hh"
-#include "symbol-table.hh"
-#include "config.hh"
-#include "experimental-features.hh"
+#include <gc/gc_allocator.h>  // for traceable_allocator
+#include <stddef.h>           // for size_t
+#include <map>                // for allocator, map, map<>::value_compare
+#include <optional>           // for optional
+#include <unordered_map>      // for unordered_map
+#include <functional>         // for less
+#include <iosfwd>             // for ostream
+#include <list>               // for list
+#include <memory>             // for shared_ptr, unique_ptr, enable_shared_f...
+#include <string>             // for string, basic_string, operator<
+#include <string_view>        // for string_view
+#include <utility>            // for pair, move
+#include <vector>             // for vector
 
-#include <map>
-#include <optional>
-#include <unordered_map>
-#include <mutex>
+#include "attr-set.hh"        // for BindingsBuilder, Bindings
+#include "types.hh"           // for Path, Strings, PathSet, PathView, Backe...
+#include "value.hh"           // for Value, RootValue, ValueType, NixFloat
+#include "nixexpr.hh"         // for Expr (ptr only), PosIdx, StaticEnv (ptr...
+#include "symbol-table.hh"    // for Symbol, SymbolTable
+#include "config.hh"          // for Setting, Config
+#include "error.hh"           // for ErrPos, Error (ptr only), EXCEPTION_NEE...
+#include "fmt.hh"             // for hintformat
+#include "ref.hh"             // for ref
 
 namespace nix {
 
@@ -19,6 +30,8 @@ namespace nix {
 class Store;
 class EvalState;
 class StorePath;
+class Suggestions;
+
 enum RepairFlag : bool;
 
 
@@ -664,4 +677,3 @@ static const std::string corepkgsPrefix{"/__corepkgs__/"};
 
 }
 
-#include "eval-inline.hh"

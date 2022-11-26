@@ -1,22 +1,38 @@
 #pragma once
 
-#include "util.hh"
-#include "path.hh"
-#include "path-with-outputs.hh"
-#include "derived-path.hh"
-#include "eval.hh"
-#include "store-api.hh"
-#include "flake/flake.hh"
-#include "build-result.hh"
+#include <optional>              // for optional
+#include <list>                  // for _List_const_iterator
+#include <memory>                // for shared_ptr, allocator
+#include <set>                   // for set
+#include <string>                // for string, operator+, char_traits, basi...
+#include <string_view>           // for string_view
+#include <tuple>                 // for tuple
+#include <utility>               // for pair
+#include <vector>                // for vector
 
-#include <optional>
+#include "path.hh"               // for StorePath, StorePathSet
+#include "path-with-outputs.hh"  // for StorePathWithOutputs, OutputsSpec
+#include "derived-path.hh"       // for DerivedPaths, BuiltPath, BuiltPaths
+#include "store-api.hh"          // for Store (ptr only), bmNormal, BuildMode
+#include "build-result.hh"       // for BuildResult
+#include "error.hh"              // for Error
+#include "flake/flakeref.hh"     // for FlakeRef
+#include "nixexpr.hh"            // for PosIdx
+#include "ref.hh"                // for ref
+#include "types.hh"              // for Strings, Path
+#include "value.hh"              // for NixInt, Value (ptr only)
 
 namespace nix {
 
-struct DrvInfo;
 struct SourceExprCommand;
-
-namespace eval_cache { class EvalCache; class AttrCursor; }
+namespace eval_cache {
+class EvalCache; class AttrCursor;
+}  // namespace eval_cache
+class EvalState;
+namespace flake {
+struct LockFlags;
+struct LockedFlake;
+}  // namespace flake
 
 struct App
 {

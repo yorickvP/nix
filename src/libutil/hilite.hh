@@ -1,8 +1,9 @@
 #pragma once
 
-#include <regex>
-#include <vector>
-#include <string>
+#include <regex>        // for smatch
+#include <vector>       // for vector
+#include <string>       // for string
+#include <string_view>  // for string_view
 
 namespace nix {
 

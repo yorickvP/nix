@@ -1,12 +1,32 @@
 #pragma once
 
-#include "parsed-derivations.hh"
-#include "lock.hh"
-#include "store-api.hh"
-#include "pathlocks.hh"
-#include "goal.hh"
+#include <stddef.h>         // for size_t
+#include <stdint.h>         // for uint64_t
+#include <list>             // for list
+#include <map>              // for map
+#include <memory>           // for unique_ptr, shared_ptr
+#include <optional>         // for optional
+#include <string>           // for string
+#include <string_view>      // for string_view
+#include <utility>          // for pair
+
+#include "store-api.hh"     // for bmNormal, BuildError, BuildMode
+#include "pathlocks.hh"     // for PathLocks
+#include "goal.hh"          // for Goal, Goal::ExitCode, GoalPtr
+#include "build-result.hh"  // for BuildResult, BuildResult::Status
+#include "derivations.hh"   // for BasicDerivation (ptr only), Derivation (p...
+#include "error.hh"         // for Error, MakeError
+#include "hash.hh"          // for Hash
+#include "logging.hh"       // for ActivityId, Activity
+#include "path.hh"          // for StorePath, StorePathSet, OutputPathMap
+#include "realisation.hh"   // for DrvOutputs, Realisation (ptr only)
+#include "types.hh"         // for StringSet, Path
+#include "util.hh"          // for MaintainCount (ptr only), AutoCloseFD
 
 namespace nix {
+class ParsedDerivation;
+class Worker;
+struct BufferedSink;
 
 using std::map;
 

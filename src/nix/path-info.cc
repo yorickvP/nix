@@ -1,11 +1,28 @@
-#include "command.hh"
-#include "shared.hh"
-#include "store-api.hh"
-#include "json.hh"
-#include "common-args.hh"
+#include <stddef.h>            // for size_t
+#include <stdint.h>            // for uint64_t
+#include <boost/format.hpp>    // for basic_altstringbuf<>::int_type, basic_...
+#include <array>               // for array
+#include <iostream>            // for cout, ostream, operator<<, endl
+#include <list>                // for operator!=, list
+#include <map>                 // for operator!=, _Rb_tree_const_iterator
+#include <optional>            // for optional
+#include <string>              // for allocator, operator<<, string, operator+
+#include <utility>             // for pair
+#include <vector>              // for vector, max
 
-#include <algorithm>
-#include <array>
+#include "command.hh"          // for registerCommand, StorePathsCommand
+#include "store-api.hh"        // for Store, AllowInvalid
+#include "json.hh"             // for JSONPlaceholder
+#include "common-args.hh"      // for MixJSON
+#include "args.hh"             // for Command::Category
+#include "content-address.hh"  // for renderContentAddress
+#include "fmt.hh"              // for fmt
+#include "hash.hh"             // for SRI
+#include "path-info.hh"        // for ValidPathInfo
+#include "path.hh"             // for StorePaths, StorePathSet
+#include "ref.hh"              // for ref, nix
+#include "types.hh"            // for Strings, StringSet
+#include "util.hh"             // for concatStringsSep
 
 using namespace nix;
 
@@ -55,6 +72,7 @@ struct CmdPathInfo : StorePathsCommand, MixJSON
     {
         return
           #include "path-info.md"
+
           ;
     }
 

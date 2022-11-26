@@ -1,28 +1,56 @@
-#include "archive.hh"
-#include "derivations.hh"
-#include "dotgraph.hh"
-#include "globals.hh"
-#include "build-result.hh"
-#include "store-cast.hh"
-#include "gc-store.hh"
-#include "log-store.hh"
-#include "local-store.hh"
-#include "monitor-fd.hh"
-#include "serve-protocol.hh"
-#include "shared.hh"
-#include "util.hh"
-#include "worker-protocol.hh"
-#include "graphml.hh"
-#include "legacy.hh"
-#include "path-with-outputs.hh"
+#include <sys/stat.h>              // for umask
+#include <assert.h>                // for assert
+#include <stdlib.h>                // for abort
+#include <unistd.h>                // for STDIN_FILENO, STDOUT_FILENO
+#include <boost/format.hpp>        // for basic_altstringbuf<>::int_type
+#include <boost/lexical_cast.hpp>  // for bad_lexical_cast
+#include <iostream>                // for cout, ostream, operator<<, basic_o...
+#include <algorithm>               // for equal, lexicographical_compare
+#include <cstdint>                 // for int64_t, uint64_t
+#include <list>                    // for _List_iterator, operator!=, _List_...
+#include <map>                     // for operator!=, _Rb_tree_const_iterator
+#include <memory>                  // for shared_ptr, __shared_ptr_access
+#include <optional>                // for optional, nullopt
+#include <set>                     // for set, set<>::iterator
+#include <string>                  // for operator==, basic_string, string
+#include <string_view>             // for string_view
+#include <unordered_set>           // for _Node_iterator, operator!=, _Node_...
+#include <utility>                 // for pair, move, tuple_element<>::type
+#include <vector>                  // for vector, max, vector<>::reverse_ite...
 
-#include <iostream>
-#include <algorithm>
-#include <cstdio>
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
+#include "archive.hh"              // for dumpPath, restorePath
+#include "derivations.hh"          // for Derivation, DerivationOutputs, rea...
+#include "dotgraph.hh"             // for printDotGraph
+#include "globals.hh"              // for Settings, settings
+#include "build-result.hh"         // for BuildResult
+#include "store-cast.hh"           // for require
+#include "gc-store.hh"             // for GCOptions, GcStore, Roots, GCOptio...
+#include "log-store.hh"            // for LogStore
+#include "local-store.hh"          // for canonicalisePathMetaData, LocalStore
+#include "monitor-fd.hh"           // for MonitorFdHup
+#include "serve-protocol.hh"       // for ServeCommand, SERVE_MAGIC_1, SERVE...
+#include "shared.hh"               // for getArg, printGCWarning, Exit, getI...
+#include "util.hh"                 // for baseNameOf, shellEscape, writeFile
+#include "worker-protocol.hh"      // for read, write, GET_PROTOCOL_MINOR
+#include "graphml.hh"              // for printGraphML
+#include "legacy.hh"               // for MainFunction, RegisterLegacyCommand
+#include "path-with-outputs.hh"    // for StorePathWithOutputs, toDerivedPaths
+#include "config.hh"               // for Setting
+#include "content-address.hh"      // for FileIngestionMethod, parseContentA...
+#include "crypto.hh"               // for SecretKey, PublicKey
+#include "derived-path.hh"         // for DerivedPath
+#include "error.hh"                // for UsageError, Error, lvlError, lvlTa...
+#include "fmt.hh"                  // for fmt, format
+#include "hash.hh"                 // for HashResult, Hash, HashType, parseH...
+#include "local-fs-store.hh"       // for LocalFSStore
+#include "logging.hh"              // for warn, Logger, printError, printMsg
+#include "path-info.hh"            // for ValidPathInfo, ValidPathInfos
+#include "path.hh"                 // for StorePathSet, StorePath, StorePaths
+#include "ref.hh"                  // for ref, nix
+#include "repair-flag.hh"          // for NoRepair, Repair, RepairFlag
+#include "serialise.hh"            // for operator<<, FdSource, readInt, FdSink
+#include "store-api.hh"            // for Store, NoCheckSigs, decodeValidPat...
+#include "types.hh"                // for Strings, Path, PathSet, StringPairs
 
 
 namespace nix_store {

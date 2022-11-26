@@ -1,9 +1,13 @@
 #pragma once
 
-#include "comparator.hh"
-#include "error.hh"
-#include "nlohmann/json_fwd.hpp"
-#include "types.hh"
+#include <nlohmann/json_fwd.hpp>  // for json
+#include <iosfwd>                 // for ostream
+#include <optional>               // for optional
+#include <set>                    // for set
+#include <string>                 // for string
+#include <string_view>            // for string_view
+
+#include "error.hh"               // for Error
 
 namespace nix {
 

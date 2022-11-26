@@ -1,8 +1,22 @@
+#include <assert.h>        // for assert
+#include <algorithm>       // for max, sort
+#include <atomic>          // for atomic_bool
+#include <set>             // for set
+#include <type_traits>     // for remove_reference<>::type
+
 #include "eval-cache.hh"
-#include "sqlite.hh"
-#include "eval.hh"
-#include "eval-inline.hh"
-#include "store-api.hh"
+#include "sqlite.hh"       // for SQLiteStmt::Use, SQLite, SQLiteStmt, SQLit...
+#include "eval.hh"         // for EvalState, showType, decodeContext
+#include "eval-inline.hh"  // for EvalState::forceValue, EvalState::forceAttrs
+#include "store-api.hh"    // for Store
+#include "attr-set.hh"     // for Bindings, Attr
+#include "globals.hh"      // for Settings, settings
+#include "hash.hh"         // for Hash, Base16
+#include "logging.hh"      // for Logger, debug
+#include "path.hh"         // for StorePath
+#include "sync.hh"         // for Sync<>::Lock, Sync
+#include "types.hh"        // for Path
+#include "util.hh"         // for concatStringsSep, ignoreException, tokeniz...
 
 namespace nix::eval_cache {
 

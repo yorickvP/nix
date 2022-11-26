@@ -1,29 +1,42 @@
+#include <unistd.h>            // for read
+#include <fcntl.h>             // for fcntl, F_SETFL, O_NONBLOCK
+#include <curl/curl.h>         // for curl_easy_setopt, curl_waitfd, curl_sl...
+#include <assert.h>            // for assert
+#include <aws/core/Region.h>   // for US_EAST_1
+#include <curl/curlver.h>      // for LIBCURL_VERSION_NUM, LIBCURL_VERSION
+#include <curl/system.h>       // for curl_off_t
+#include <errno.h>             // for EINTR, errno
+#include <boost/format.hpp>    // for basic_altstringbuf<>::int_type, basic_...
+#include <algorithm>           // for min
+#include <cmath>               // for pow
+#include <cstring>             // for memcpy
+#include <queue>               // for priority_queue
+#include <random>              // for mt19937, random_device, uniform_real_d...
+#include <thread>              // for thread
+#include <regex>               // for operator|, regex, regex_match, match_r...
+#include <atomic>              // for atomic
+#include <chrono>              // for duration, milliseconds, steady_clock::...
+#include <condition_variable>  // for condition_variable
+#include <exception>           // for exception_ptr, current_exception, exce...
+#include <memory>              // for shared_ptr, __shared_ptr_access, make_...
+#include <mutex>               // for call_once, once_flag
+#include <set>                 // for set
+#include <tuple>               // for tuple_element<>::type, tuple
+#include <utility>             // for move, pair
+#include <vector>              // for vector, max
+#include <type_traits>         // for remove_reference<>::type
+
 #include "filetransfer.hh"
-#include "util.hh"
-#include "globals.hh"
-#include "store-api.hh"
-#include "s3.hh"
-#include "compression.hh"
-#include "finally.hh"
-#include "callback.hh"
-
-#if ENABLE_S3
-#include <aws/core/client/ClientConfiguration.h>
-#endif
-
-#include <unistd.h>
-#include <fcntl.h>
-
-#include <curl/curl.h>
-
-#include <algorithm>
-#include <cmath>
-#include <cstring>
-#include <iostream>
-#include <queue>
-#include <random>
-#include <thread>
-#include <regex>
+#include "util.hh"             // for trim, getOr, hasPrefix, Pipe, checkInt...
+#include "globals.hh"          // for Settings, settings, nixVersion
+#include "store-api.hh"        // for splitUriAndParams, Store, Store::Params
+#include "s3.hh"               // for S3Helper, S3Helper::FileTransferResult
+#include "compression.hh"      // for makeDecompressionSink
+#include "finally.hh"          // for Finally
+#include "callback.hh"         // for Callback
+#include "fmt.hh"              // for hintfmt, fmt, format, normaltxt
+#include "serialise.hh"        // for StringSink, FinishSink, LambdaSink, Sink
+#include "sync.hh"             // for Sync<>::Lock, Sync
 
 using namespace std::string_literals;
 

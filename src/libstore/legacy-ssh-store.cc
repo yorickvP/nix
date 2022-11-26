@@ -1,14 +1,42 @@
-#include "archive.hh"
-#include "pool.hh"
-#include "remote-store.hh"
-#include "serve-protocol.hh"
-#include "build-result.hh"
-#include "store-api.hh"
-#include "path-with-outputs.hh"
-#include "worker-protocol.hh"
-#include "ssh.hh"
-#include "derivations.hh"
-#include "callback.hh"
+#include <assert.h>              // for assert
+#include <boost/format.hpp>      // for basic_altstringbuf<>::int_type, basi...
+#include <algorithm>             // for equal
+#include <map>                   // for operator!=, map, _Rb_tree_const_iter...
+#include <memory>                // for allocator, shared_ptr, __shared_ptr_...
+#include <optional>              // for optional
+#include <set>                   // for set
+#include <string>                // for string, basic_string, char_traits
+#include <string_view>           // for string_view
+#include <utility>               // for move
+#include <variant>               // for visit
+#include <vector>                // for vector, max
+
+#include "archive.hh"            // for copyNAR
+#include "pool.hh"               // for Pool<>::Handle, Pool
+#include "serve-protocol.hh"     // for SERVE_MAGIC_1, SERVE_MAGIC_2, SERVE_...
+#include "build-result.hh"       // for BuildResult, BuildResult::Status
+#include "store-api.hh"          // for StoreConfig, Store, BuildMode, Check...
+#include "path-with-outputs.hh"  // for StorePathWithOutputs
+#include "worker-protocol.hh"    // for read, write, GET_PROTOCOL_MINOR, Pha...
+#include "ssh.hh"                // for SSHMaster::Connection, SSHMaster
+#include "derivations.hh"        // for writeDerivation, BasicDerivation (pt...
+#include "callback.hh"           // for Callback
+#include "config.hh"             // for Setting, operator<<
+#include "content-address.hh"    // for parseContentAddressOpt, renderConten...
+#include "derived-path.hh"       // for DerivedPath, DerivedPath::Built, Der...
+#include "error.hh"              // for Error
+#include "fmt.hh"                // for fmt
+#include "globals.hh"            // for Settings, settings
+#include "hash.hh"               // for Hash, Base16, Hash::dummy, HashType
+#include "logging.hh"            // for Logger, debug
+#include "path-info.hh"          // for ValidPathInfo
+#include "path.hh"               // for StorePath, StorePathSet, StorePath::...
+#include "realisation.hh"        // for DrvOutputs, DrvOutput (ptr only)
+#include "ref.hh"                // for ref, make_ref
+#include "repair-flag.hh"        // for RepairFlag
+#include "serialise.hh"          // for operator<<, FdSink, Sink, FdSource
+#include "types.hh"              // for Path, Strings, PathSet, StringSet
+#include "util.hh"               // for AutoCloseFD, chomp, shellEscape, End...
 
 namespace nix {
 

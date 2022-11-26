@@ -1,10 +1,20 @@
-#include "remote-fs-accessor.hh"
-#include "nar-accessor.hh"
-#include "json.hh"
+#include <fcntl.h>           // for open, O_CLOEXEC, O_RDONLY, off_t
+#include <assert.h>          // for assert
+#include <stdint.h>          // for uint64_t
+#include <unistd.h>          // for lseek
+#include <stdio.h>           // for SEEK_SET
+#include <boost/format.hpp>  // for basic_altstringbuf<>::int_type, basic_al...
+#include <sstream>           // for ostringstream, basic_ostringstream<>::__...
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
+#include "remote-fs-accessor.hh"
+#include "nar-accessor.hh"   // for makeNarAccessor, listNar, makeLazyNarAcc...
+#include "json.hh"           // for JSONPlaceholder
+#include "error.hh"          // for SysError
+#include "fmt.hh"            // for fmt
+#include "path.hh"           // for StorePath
+#include "serialise.hh"      // for StringSink
+#include "store-api.hh"      // for Store, InvalidPath
+#include "util.hh"           // for ignoreException, readFile, writeFile
 
 namespace nix {
 

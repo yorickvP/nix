@@ -1,13 +1,42 @@
-#include "derivations.hh"
-#include "parsed-derivations.hh"
-#include "globals.hh"
-#include "local-store.hh"
-#include "store-api.hh"
-#include "thread-pool.hh"
-#include "topo-sort.hh"
-#include "callback.hh"
-#include "closure.hh"
-#include "filetransfer.hh"
+#include <assert.h>               // for assert
+#include <stddef.h>               // for size_t
+#include <stdint.h>               // for uint64_t
+#include <algorithm>              // for reverse
+#include <exception>              // for current_exception
+#include <functional>             // for function, _Bind_helper<>::type, bind
+#include <future>                 // for future, promise
+#include <map>                    // for operator!=, _Rb_tree_const_iterator
+#include <memory>                 // for allocator, shared_ptr, __shared_ptr...
+#include <optional>               // for optional, nullopt
+#include <set>                    // for set
+#include <string>                 // for string, basic_string, operator<, hash
+#include <type_traits>            // for add_const<>::type
+#include <unordered_set>          // for unordered_set
+#include <utility>                // for tuple_element<>::type, pair
+#include <variant>                // for get_if, visit
+#include <vector>                 // for vector
+
+#include "callback.hh"            // for Callback
+#include "derivations.hh"         // for Derivation, DerivationInputs, wantO...
+#include "parsed-derivations.hh"  // for ParsedDerivation
+#include "globals.hh"             // for Settings, settings
+#include "store-api.hh"           // for Store, BuildError, InvalidPath, drv...
+#include "thread-pool.hh"         // for ThreadPool
+#include "topo-sort.hh"           // for topoSort
+#include "closure.hh"             // for computeClosure
+#include "filetransfer.hh"        // for FileTransferSettings, fileTransferS...
+#include "config.hh"              // for Setting
+#include "content-address.hh"     // for ContentAddress
+#include "derived-path.hh"        // for DerivedPath, DerivedPath::Built
+#include "error.hh"               // for Error, lvlDebug
+#include "hash.hh"                // for Hash
+#include "logging.hh"             // for Activity, actUnknown, logger
+#include "path-info.hh"           // for SubstitutablePathInfos, Substitutab...
+#include "path.hh"                // for StorePath, StorePathSet, StorePaths
+#include "realisation.hh"         // for DrvOutput, Realisation
+#include "ref.hh"                 // for ref, make_ref
+#include "sync.hh"                // for Sync, Sync<>::Lock
+#include "util.hh"                // for get, overloaded
 
 namespace nix {
 

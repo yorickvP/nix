@@ -1,10 +1,21 @@
 #pragma once
 
-#include "store-api.hh"
-#include "gc-store.hh"
-#include "log-store.hh"
+#include <assert.h>      // for assert
+#include <optional>      // for optional
+#include <string>        // for allocator, operator+, char_traits, string
+
+#include "store-api.hh"  // for StoreConfig, Store, Store::Params
+#include "gc-store.hh"   // for GcStore
+#include "log-store.hh"  // for LogStore
+#include "config.hh"     // for PathSetting, BaseSetting
+#include "globals.hh"    // for Settings, settings
+#include "path.hh"       // for StorePath
+#include "ref.hh"        // for ref
+#include "types.hh"      // for Path
 
 namespace nix {
+class FSAccessor;
+struct Sink;
 
 struct LocalFSStoreConfig : virtual StoreConfig
 {

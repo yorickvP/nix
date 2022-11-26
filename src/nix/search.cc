@@ -1,18 +1,39 @@
-#include "command.hh"
-#include "globals.hh"
-#include "eval.hh"
-#include "eval-inline.hh"
-#include "names.hh"
-#include "get-drvs.hh"
-#include "common-args.hh"
-#include "json.hh"
-#include "shared.hh"
-#include "eval-cache.hh"
-#include "attr-path.hh"
-#include "hilite.hh"
+#include <stdint.h>          // for uint64_t
+#include <boost/format.hpp>  // for basic_altstringbuf<>::int_type, basic_al...
+#include <regex>             // for regex, smatch, regex_search, match_resul...
+#include <algorithm>         // for max, replace
+#include <functional>        // for function
+#include <iostream>          // for cout
+#include <map>               // for map
+#include <memory>            // for allocator, shared_ptr, __shared_ptr_access
+#include <sstream>           // for basic_stringbuf<>::int_type, basic_strin...
+#include <string>            // for string, basic_string, operator+, char_tr...
+#include <vector>            // for vector
 
-#include <regex>
-#include <fstream>
+#include "command.hh"        // for registerCommand, InstallableCommand
+#include "globals.hh"        // for Settings, settings
+#include "eval.hh"           // for EvalState, EvalSettings, evalSettings
+#include "names.hh"          // for DrvName
+#include "common-args.hh"    // for MixJSON
+#include "json.hh"           // for JSONObject
+#include "eval-cache.hh"     // for AttrCursor
+#include "hilite.hh"         // for hiliteMatches
+#include "ansicolor.hh"      // for ANSI_GREEN, ANSI_NORMAL
+#include "args.hh"           // for Args::Flag
+#include "config.hh"         // for Setting
+#include "error.hh"          // for Error, lvlInfo
+#include "fmt.hh"            // for fmt
+#include "installables.hh"   // for Installable
+#include "logging.hh"        // for logger, Logger, Activity, actUnknown
+#include "nixexpr.hh"        // for EvalError
+#include "ref.hh"            // for ref, nix
+#include "symbol-table.hh"   // for SymbolStr, Symbol (ptr only), SymbolTable
+#include "types.hh"          // for Strings
+#include "util.hh"           // for concatStringsSep, concatStrings
+
+namespace nix {
+class Store;
+}  // namespace nix
 
 using namespace nix;
 
@@ -49,6 +70,7 @@ struct CmdSearch : InstallableCommand, MixJSON
     {
         return
           #include "search.md"
+
           ;
     }
 

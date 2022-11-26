@@ -1,9 +1,15 @@
-#include "graphml.hh"
-#include "util.hh"
-#include "store-api.hh"
-#include "derivations.hh"
+#include <boost/format.hpp>  // for basic_altstringbuf<>::int_type, basic_al...
+#include <iostream>          // for operator<<, basic_ostream, cout, ostream
+#include <set>               // for set<>::iterator, operator!=, _Rb_tree_co...
+#include <string>            // for string, char_traits, operator<<, allocator
+#include <string_view>       // for string_view
+#include <utility>           // for move, pair
 
-#include <iostream>
+#include "graphml.hh"
+#include "store-api.hh"      // for Store
+#include "fmt.hh"            // for fmt
+#include "path-info.hh"      // for ValidPathInfo
+#include "ref.hh"            // for ref
 
 
 using std::cout;

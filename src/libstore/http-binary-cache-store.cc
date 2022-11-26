@@ -1,8 +1,27 @@
-#include "binary-cache-store.hh"
-#include "filetransfer.hh"
-#include "globals.hh"
-#include "nar-info-disk-cache.hh"
-#include "callback.hh"
+#include <chrono>                  // for steady_clock::time_point, operator+
+#include <future>                  // for future
+#include <istream>                 // for basic_iostream
+#include <memory>                  // for allocator, shared_ptr, __shared_pt...
+#include <optional>                // for optional, operator==
+#include <set>                     // for set
+#include <string>                  // for string, basic_string, char_traits
+#include <type_traits>             // for remove_reference<>::type
+#include <utility>                 // for move
+
+#include "binary-cache-store.hh"   // for BinaryCacheStoreConfig, BinaryCach...
+#include "filetransfer.hh"         // for FileTransferError, getFileTransfer
+#include "globals.hh"              // for Settings, settings
+#include "nar-info-disk-cache.hh"  // for getNarInfoDiskCache, NarInfoDiskCache
+#include "callback.hh"             // for Callback
+#include "config.hh"               // for Setting
+#include "error.hh"                // for Error, MakeError
+#include "logging.hh"              // for Logger, debug, printError
+#include "ref.hh"                  // for ref
+#include "serialise.hh"            // for StreamToSourceAdapter, Sink (ptr o...
+#include "store-api.hh"            // for StoreConfig, RegisterStoreImplemen...
+#include "sync.hh"                 // for Sync<>::Lock, Sync
+#include "types.hh"                // for Path, StringMap
+#include "util.hh"                 // for hasPrefix, getEnv
 
 namespace nix {
 

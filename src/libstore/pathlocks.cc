@@ -1,14 +1,18 @@
+#include <fcntl.h>           // for open, O_CLOEXEC, O_CREAT, O_RDWR
+#include <sys/stat.h>        // for fstat, stat
+#include <sys/file.h>        // for flock, LOCK_EX, LOCK_NB, LOCK_SH, LOCK_UN
+#include <assert.h>          // for assert
+#include <unistd.h>          // for close, unlink
+#include <boost/format.hpp>  // for basic_format, basic_altstringbuf<>::int_...
+#include <cerrno>            // for errno, EINTR, ENOENT, EWOULDBLOCK
+#include <cstdlib>           // for abort
+#include <map>               // for operator!=, _Rb_tree_const_iterator, _Rb...
+
 #include "pathlocks.hh"
-#include "util.hh"
-#include "sync.hh"
-
-#include <cerrno>
-#include <cstdlib>
-
-#include <fcntl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/file.h>
+#include "util.hh"           // for AutoCloseFD, checkInterrupt, ignoreExcep...
+#include "error.hh"          // for SysError
+#include "fmt.hh"            // for format
+#include "logging.hh"        // for Logger, debug, printError, printInfo
 
 
 namespace nix {

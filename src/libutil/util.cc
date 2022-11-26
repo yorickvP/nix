@@ -1,31 +1,39 @@
+#include <fcntl.h>             // for open, fcntl, O_RDONLY, O_CLOEXEC, openat
+#include <grp.h>               // for setgroups
+#include <pwd.h>               // for passwd, getpwuid, getpwuid_r
+#include <sys/ioctl.h>         // for ioctl, winsize, TIOCGWINSZ
+#include <sys/types.h>         // for pid_t, ssize_t, uid_t, mode_t
+#include <sys/socket.h>        // for bind, connect, listen, socket, AF_UNIX
+#include <sys/wait.h>          // for WEXITSTATUS, WIFEXITED, waitpid, WIFSI...
+#include <sys/un.h>            // for sockaddr_un
+#include <unistd.h>            // for dup2, _exit, chdir, close, geteuid, read
+#include <assert.h>            // for assert
+#include <sched.h>             // for setns, unshare, CLONE_FS, CLONE_NEWNS
+#include <boost/format.hpp>    // for basic_altstringbuf<>::int_type, basic_...
+#include <array>               // for array
+#include <cctype>              // for tolower
+#include <cerrno>              // for errno, EINTR, ENOENT, EPERM, EAGAIN
+#include <climits>             // for PATH_MAX
+#include <cstdio>              // for fclose, fopen, remove, FILE
+#include <cstdlib>             // for abort, exit, getenv, setenv, unsetenv
+#include <cstring>             // for memcpy, strchr, strsignal
+#include <future>              // for promise, future
+#include <iostream>            // for cerr
+#include <mutex>               // for call_once, once_flag
+#include <sstream>             // for char_traits, operator<<, basic_ostream
+#include <thread>              // for thread
+#include <algorithm>           // for max, min
+#include <exception>           // for exception, current_exception, uncaught...
+#include <list>                // for operator!=, _List_const_iterator, list
+
 #include "util.hh"
-#include "sync.hh"
-#include "finally.hh"
-#include "serialise.hh"
-
-#include <array>
-#include <cctype>
-#include <cerrno>
-#include <climits>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <future>
-#include <iostream>
-#include <mutex>
-#include <sstream>
-#include <thread>
-
-#include <fcntl.h>
-#include <grp.h>
-#include <pwd.h>
-#include <sys/ioctl.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/wait.h>
-#include <sys/time.h>
-#include <sys/un.h>
-#include <unistd.h>
+#include "sync.hh"             // for Sync<>::Lock, Sync
+#include "finally.hh"          // for Finally
+#include "serialise.hh"        // for StringSource, Source, StringSink, Sink
+#include "libutil/error.hh"    // for SysError, Error, ErrPos
+#include "libutil/fmt.hh"      // for fmt, format
+#include "libutil/logging.hh"  // for makeSimpleLogger, warn, Logger, debug
+#include "libutil/types.hh"    // for Path, Strings, PathView, Paths, StringMap
 
 #ifdef __APPLE__
 #include <sys/syscall.h>
@@ -33,11 +41,10 @@
 #endif
 
 #ifdef __linux__
-#include <sys/prctl.h>
-#include <sys/resource.h>
-
-#include <mntent.h>
-#include <cmath>
+#include <sys/prctl.h>         // for prctl, PR_SET_PDEATHSIG
+#include <sys/resource.h>      // for getrlimit, rlimit, setrlimit, RLIMIT_S...
+#include <mntent.h>            // for getmntent, mntent
+#include <cmath>               // for ceil
 #endif
 
 

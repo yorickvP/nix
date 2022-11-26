@@ -1,4 +1,10 @@
+#include <algorithm>           // for copy
+#include <utility>             // for move
+
 #include "thread-pool.hh"
+#include "libutil/logging.hh"  // for Logger, debug
+#include "libutil/sync.hh"     // for Sync<>::Lock, Sync
+#include "libutil/util.hh"     // for ignoreException, Interrupted, interrup...
 
 namespace nix {
 

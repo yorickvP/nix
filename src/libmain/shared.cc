@@ -1,37 +1,52 @@
-#include "globals.hh"
+#include <sys/time.h>              // for gettimeofday, timeval
+#include <sys/stat.h>              // for umask
+#include <unistd.h>                // for execlp, dup2, STDOUT_FILENO, execl
+#include <signal.h>                // for sigaction, sigemptyset, sa_handler
+#include <assert.h>                // for assert
+#include <fcntl.h>                 // for fcntl, F_DUPFD_CLOEXEC
+#include <openssl/opensslv.h>      // for OPENSSL_VERSION_NUMBER
+#include <sodium/core.h>           // for sodium_init
+#include <boost/format.hpp>        // for basic_altstringbuf<>::int_type
+#include <boost/lexical_cast.hpp>  // for bad_lexical_cast
+#include <algorithm>               // for reverse
+#include <exception>               // for exception
+#include <iostream>                // for operator<<, char_traits, basic_ost...
+#include <mutex>                   // for call_once, once_flag
+#include <cstdlib>                 // for getenv, setenv, srandom
+#include <cstdint>                 // for uint64_t
+#include <new>                     // for bad_alloc
+#include <optional>                // for optional
+#include <set>                     // for operator!=, _Rb_tree_const_iterator
+#include <string_view>             // for string_view
+
+#include "globals.hh"              // for Settings, settings, loadConfFile
 #include "shared.hh"
-#include "store-api.hh"
-#include "gc-store.hh"
-#include "util.hh"
-#include "loggers.hh"
-#include "progress-bar.hh"
-
-#include <algorithm>
-#include <cctype>
-#include <exception>
-#include <iostream>
-#include <mutex>
-
-#include <cstdlib>
-#include <sys/time.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <signal.h>
+#include "store-api.hh"            // for Store
+#include "gc-store.hh"             // for GCResults
+#include "util.hh"                 // for concatStringsSep, baseNameOf, rest...
+#include "loggers.hh"              // for setLogFormat, LogFormat, LogFormat...
+#include "progress-bar.hh"         // for stopProgressBar
+#include "ansicolor.hh"            // for ANSI_NORMAL, ANSI_RED
+#include "args.hh"                 // for argvToStrings
+#include "config.hh"               // for Setting, operator<<
+#include "fmt.hh"                  // for fmt, format
+#include "libmain/common-args.hh"  // for MixCommonArgs
+#include "logging.hh"              // for Logger, printMsg, printError, warn
+#include "ref.hh"                  // for ref
 #ifdef __linux__
-#include <features.h>
+#include <features.h>              // for __GLIBC__
 #endif
 #ifdef __GLIBC__
-#include <gnu/lib-names.h>
-#include <nss.h>
-#include <dlfcn.h>
+#include <gnu/lib-names.h>         // for LIBNSS_DNS_SO
+#include <nss.h>                   // for __nss_configure_lookup
+#include <dlfcn.h>                 // for dlopen, RTLD_NOW
 #endif
 
-#include <openssl/crypto.h>
 
-#include <sodium.h>
 
 
 namespace nix {
+struct DerivedPath;
 
 char * * savedArgv;
 

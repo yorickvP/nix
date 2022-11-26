@@ -1,7 +1,13 @@
-#include "attr-set.hh"
-#include "eval-inline.hh"
+#include <stddef.h>        // for size_t
+#include <algorithm>       // for sort
+#include <limits>          // for numeric_limits
+#include <new>             // for operator new
 
-#include <algorithm>
+#include "attr-set.hh"
+#include "eval-inline.hh"  // for allocBytes, EvalState::allocValue
+#include "error.hh"        // for Error
+#include "eval.hh"         // for EvalState
+#include "value.hh"        // for Value, Value::(anonymous)
 
 
 namespace nix {

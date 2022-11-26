@@ -1,11 +1,28 @@
-#include "command.hh"
-#include "shared.hh"
-#include "store-api.hh"
-#include "sync.hh"
-#include "thread-pool.hh"
-#include "references.hh"
+#include <stddef.h>                // for size_t
+#include <boost/format.hpp>        // for basic_altstringbuf<>::int_type
+#include <boost/lexical_cast.hpp>  // for bad_lexical_cast
+#include <atomic>                  // for atomic, __atomic_base
+#include <functional>              // for _Bind_helper<>::type, bind
+#include <list>                    // for operator!=, _List_iterator, _List_...
+#include <map>                     // for operator!=, _Rb_tree_const_iterator
+#include <string>                  // for string, basic_string, allocator
+#include <utility>                 // for pair
+#include <vector>                  // for vector, max
 
-#include <atomic>
+#include "command.hh"              // for registerCommand2, StorePathsCommand
+#include "shared.hh"               // for Exit
+#include "store-api.hh"            // for Store, openStore, InvalidPath
+#include "thread-pool.hh"          // for ThreadPool
+#include "crypto.hh"               // for getDefaultPublicKeys, PublicKeys
+#include "error.hh"                // for Error, lvlInfo
+#include "fmt.hh"                  // for fmt
+#include "hash.hh"                 // for Hash, HashSink, Base32
+#include "logging.hh"              // for Activity, Logger, logError, logger
+#include "path-info.hh"            // for ValidPathInfo, ValidPathInfo::maxSigs
+#include "path.hh"                 // for StorePaths
+#include "ref.hh"                  // for ref, nix
+#include "types.hh"                // for StringSet, Strings, Path
+#include "util.hh"                 // for checkInterrupt, MaintainCount
 
 using namespace nix;
 
@@ -56,6 +73,7 @@ struct CmdVerify : StorePathsCommand
     {
         return
           #include "verify.md"
+
           ;
     }
 

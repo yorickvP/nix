@@ -1,14 +1,25 @@
 #pragma once
 
-#include "store-api.hh"
-#include "goal.hh"
-#include "realisation.hh"
-#include <thread>
-#include <future>
+#include <stdlib.h>            // for abort
+#include <thread>              // for thread
+#include <future>              // for promise
+#include <list>                // for list
+#include <memory>              // for shared_ptr
+#include <optional>            // for optional, nullopt
+#include <string>              // for string
+
+#include "goal.hh"             // for Goal
+#include "realisation.hh"      // for Realisation (ptr only), DrvOutput
+#include "content-address.hh"  // for ContentAddress
+#include "error.hh"            // for Error
+#include "ref.hh"              // for ref
+#include "repair-flag.hh"      // for NoRepair, RepairFlag
+#include "util.hh"             // for Pipe
 
 namespace nix {
 
 class Worker;
+class Store;
 
 // Substitution of a derivation output.
 // This is done in three steps:

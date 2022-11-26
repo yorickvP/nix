@@ -1,7 +1,13 @@
 #pragma once
 
-#include "types.hh"
-#include "serialise.hh"
+#include <stdint.h>         // for uint64_t
+#include <time.h>           // for time_t
+#include <string>           // for string
+#include <string_view>      // for string_view
+
+#include "types.hh"         // for Path
+#include "serialise.hh"     // for Sink
+#include "libutil/util.hh"  // for defaultPathFilter, PathFilter
 
 
 namespace nix {

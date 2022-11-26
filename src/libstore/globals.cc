@@ -1,17 +1,22 @@
+#include <dlfcn.h>                 // for dlerror, dlopen, RTLD_LAZY, RTLD_L...
+#include <sys/utsname.h>           // for uname, utsname
+#include <nlohmann/json.hpp>       // for NLOHMANN_JSON_SERIALIZE_ENUM, basi...
+#include <assert.h>                // for assert
+#include <errno.h>                 // for ENOTDIR
+#include <stdlib.h>                // for abort
+#include <unistd.h>                // for access, getuid, R_OK, W_OK
+#include <boost/lexical_cast.hpp>  // for bad_lexical_cast
+#include <algorithm>               // for find
+#include <map>                     // for operator!=, _Rb_tree_const_iterator
+#include <thread>                  // for thread
+#include <initializer_list>        // for initializer_list
+
 #include "globals.hh"
-#include "util.hh"
-#include "archive.hh"
-#include "args.hh"
 #include "abstract-setting-to-json.hh"
-#include "compute-levels.hh"
-
-#include <algorithm>
-#include <map>
-#include <thread>
-#include <dlfcn.h>
-#include <sys/utsname.h>
-
-#include <nlohmann/json.hpp>
+#include "util.hh"                 // for getEnv, canonPath, tokenizeString
+#include "args.hh"                 // for Args
+#include "compute-levels.hh"       // for computeLevels
+#include "error.hh"                // for UsageError, SysError, Error
 
 
 namespace nix {

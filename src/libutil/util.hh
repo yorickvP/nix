@@ -1,23 +1,29 @@
 #pragma once
 
-#include "types.hh"
-#include "error.hh"
-#include "logging.hh"
-#include "ansicolor.hh"
+#include <sys/stat.h>              // for mode_t, stat, time_t
+#include <dirent.h>                // for closedir, DIR, ino_t
+#include <signal.h>                // for pid_t, size_t, pthread_kill, SIGKILL
+#include <boost/lexical_cast.hpp>  // for bad_lexical_cast, lexical_cast
+#include <pthread.h>               // for pthread_self, pthread_t
+#include <stdint.h>                // for uint64_t
+#include <atomic>                  // for atomic
+#include <functional>              // for function
+#include <map>                     // for map, allocator
+#include <optional>                // for optional, nullopt
+#include <cctype>                  // for isalpha, toupper
+#include <iterator>                // for reverse_iterator
+#include <limits>                  // for numeric_limits
+#include <memory>                  // for unique_ptr
+#include <set>                     // for set
+#include <string>                  // for string, basic_string
+#include <string_view>             // for string_view, operator==, basic_str...
+#include <tuple>                   // for tie
+#include <type_traits>             // for declval, enable_if_t
+#include <utility>                 // for move, pair, forward
+#include <vector>                  // for vector, max
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <dirent.h>
-#include <unistd.h>
-#include <signal.h>
-
-#include <boost/lexical_cast.hpp>
-
-#include <atomic>
-#include <functional>
-#include <map>
-#include <sstream>
-#include <optional>
+#include "types.hh"                // for Path, PathView, Strings, Paths
+#include "error.hh"                // for Error, BaseError, MakeError, Usage...
 
 #ifndef HAVE_STRUCT_DIRENT_D_TYPE
 #define DT_UNKNOWN 0
@@ -465,7 +471,7 @@ bool statusOk(int status);
 
 /* Parse a string into an integer. */
 template<class N>
-std::optional<N> string2Int(const std::string_view s)
+std::optional<N> string2Int(const std::string_view s) noexcept
 {
     if (s.substr(0, 1) == "-" && !std::numeric_limits<N>::is_signed)
         return std::nullopt;
@@ -614,8 +620,6 @@ std::optional<typename T::value_type> pop(T & c)
 }
 
 
-template<typename T>
-class Callback;
 
 
 /* Start a thread that handles various signals. Also block those signals

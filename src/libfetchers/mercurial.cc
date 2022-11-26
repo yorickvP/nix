@@ -1,13 +1,35 @@
-#include "fetchers.hh"
-#include "cache.hh"
-#include "globals.hh"
-#include "tarfile.hh"
-#include "store-api.hh"
-#include "url-parts.hh"
+#include <assert.h>              // for assert
+#include <sys/stat.h>            // for uid_t, S_ISDIR, stat
+#include <boost/format.hpp>      // for basic_altstringbuf<>::int_type, basi...
+#include <cstdint>               // for uint64_t
+#include <map>                   // for map, operator!=, _Rb_tree_const_iter...
+#include <memory>                // for allocator, make_unique, __alloc_trai...
+#include <optional>              // for optional, operator==, operator!=
+#include <regex>                 // for regex_match, match_results<>::_Base_...
+#include <set>                   // for set
+#include <string>                // for string, basic_string, operator+, ope...
+#include <string_view>           // for string_view
+#include <type_traits>           // for remove_reference<>::type
+#include <utility>               // for move, pair, tuple_element<>::type
+#include <vector>                // for vector, vector<>::reference
 
-#include "fetch-settings.hh"
-
-#include <sys/time.h>
+#include "fetchers.hh"           // for Input, registerInputScheme, InputScheme
+#include "cache.hh"              // for getCache, Cache
+#include "store-api.hh"          // for Store
+#include "url-parts.hh"          // for refRegex
+#include "fetch-settings.hh"     // for FetchSettings, fetchSettings
+#include "config.hh"             // for Setting
+#include "content-address.hh"    // for FileIngestionMethod, FileIngestionMe...
+#include "error.hh"              // for Error, lvlTalkative
+#include "fmt.hh"                // for fmt
+#include "hash.hh"               // for Hash, HashType, hashString, htSHA1
+#include "libfetchers/attrs.hh"  // for Attrs, getStrAttr, maybeGetStrAttr
+#include "logging.hh"            // for warn, Activity, actUnknown, logger
+#include "path.hh"               // for StorePath
+#include "ref.hh"                // for ref
+#include "types.hh"              // for Path, OnStartup, Strings
+#include "url.hh"                // for ParsedURL, parseURL, BadURL
+#include "util.hh"               // for pathExists, hasPrefix, runProgram
 
 using namespace std::string_literals;
 

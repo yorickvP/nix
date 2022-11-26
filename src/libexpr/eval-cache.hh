@@ -1,11 +1,27 @@
 #pragma once
 
-#include "sync.hh"
-#include "hash.hh"
-#include "eval.hh"
+#include <stdint.h>         // for uint64_t
+#include <functional>       // for function, reference_wrapper
+#include <variant>          // for variant
+#include <memory>           // for shared_ptr, enable_shared_from_this
+#include <optional>         // for optional
+#include <string>           // for string, basic_string
+#include <string_view>      // for string_view
+#include <utility>          // for pair
+#include <vector>           // for vector
 
-#include <functional>
-#include <variant>
+#include "error.hh"         // for MakeError
+#include "nixexpr.hh"       // for EvalError
+#include "ref.hh"           // for ref
+#include "suggestions.hh"   // for OrSuggestions, Suggestions
+#include "symbol-table.hh"  // for Symbol
+#include "value.hh"         // for NixStringContext, Value (ptr only), NixInt
+
+namespace nix {
+class EvalState;
+class StorePath;
+struct Hash;
+}  // namespace nix
 
 namespace nix::eval_cache {
 

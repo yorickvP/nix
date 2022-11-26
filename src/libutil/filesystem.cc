@@ -1,9 +1,25 @@
-#include <sys/time.h>
-#include <filesystem>
+#include <sys/time.h>          // for timeval, lutimes
+#include <sys/stat.h>          // for stat, mkdir, mode_t, st_atime, st_mtime
+#include <errno.h>             // for EEXIST, EXDEV, errno
+#include <stdlib.h>            // for mkstemp
+#include <unistd.h>            // for getpid, symlink
+#include <boost/format.hpp>    // for basic_altstringbuf<>::int_type, basic_...
+#include <filesystem>          // for path, directory_entry, operator|, remove
+#include <chrono>              // for filesystem
+#include <ctime>               // for time_t
+#include <optional>            // for optional
+#include <sstream>             // for basic_stringbuf<>::int_type, basic_str...
+#include <string>              // for string, allocator, basic_string, char_...
+#include <system_error>        // for error_code
+#include <type_traits>         // for remove_reference<>::type
+#include <utility>             // for move, pair
 
-#include "finally.hh"
-#include "util.hh"
-#include "types.hh"
+#include "finally.hh"          // for Finally
+#include "util.hh"             // for canonPath, getEnv, AutoCloseFD, baseNa...
+#include "types.hh"            // for Path
+#include "libutil/error.hh"    // for SysError, Error
+#include "libutil/fmt.hh"      // for fmt, format
+#include "libutil/logging.hh"  // for warn
 
 namespace fs = std::filesystem;
 

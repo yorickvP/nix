@@ -1,12 +1,24 @@
+#include <nlohmann/json.hpp>  // for basic_json<>::object_t, basic_json<>::i...
+#include <assert.h>           // for assert
+#include <stddef.h>           // for size_t
+#include <map>                // for map, operator!=, _Rb_tree_iterator, ope...
+#include <stack>              // for stack
+#include <algorithm>          // for copy, count, find
+#include <initializer_list>   // for initializer_list
+#include <limits>             // for numeric_limits
+#include <optional>           // for optional
+#include <set>                // for set
+#include <string_view>        // for string_view
+#include <utility>            // for move, pair
+#include <vector>             // for max, vector
+
 #include "nar-accessor.hh"
-#include "archive.hh"
-#include "json.hh"
-
-#include <map>
-#include <stack>
-#include <algorithm>
-
-#include <nlohmann/json.hpp>
+#include "archive.hh"         // for parseDump, ParseSink
+#include "json.hh"            // for JSONObject, JSONPlaceholder
+#include "error.hh"           // for Error
+#include "fs-accessor.hh"     // for FSAccessor, FSAccessor::Type, FSAccesso...
+#include "serialise.hh"       // for Source, StringSource
+#include "util.hh"            // for baseNameOf, canonPath
 
 namespace nix {
 

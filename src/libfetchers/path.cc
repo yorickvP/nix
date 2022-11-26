@@ -1,6 +1,28 @@
-#include "fetchers.hh"
-#include "store-api.hh"
-#include "archive.hh"
+#include <time.h>                  // for time_t
+#include <boost/format.hpp>        // for basic_altstringbuf<>::int_type
+#include <boost/lexical_cast.hpp>  // for bad_lexical_cast
+#include <cstdint>                 // for uint64_t
+#include <map>                     // for operator!=, map, _Rb_tree_const_it...
+#include <memory>                  // for allocator, make_unique, unique_ptr
+#include <optional>                // for optional, operator!=
+#include <string>                  // for string, operator==, basic_string
+#include <string_view>             // for operator!=, string_view
+#include <type_traits>             // for remove_reference<>::type, add_cons...
+#include <utility>                 // for tuple_element<>::type, move, pair
+
+#include "fetchers.hh"             // for Input, registerInputScheme, InputS...
+#include "store-api.hh"            // for Store, BadStorePath
+#include "archive.hh"              // for dumpPathAndGetMtime
+#include "error.hh"                // for Error, lvlTalkative
+#include "fmt.hh"                  // for fmt
+#include "libfetchers/attrs.hh"    // for getStrAttr, Attrs, attrsToQuery
+#include "logging.hh"              // for Activity, actUnknown, logger
+#include "path.hh"                 // for StorePath
+#include "ref.hh"                  // for ref
+#include "serialise.hh"            // for sinkToSource, Sink (ptr only)
+#include "types.hh"                // for Path, OnStartup, PathView
+#include "url.hh"                  // for ParsedURL
+#include "util.hh"                 // for absPath, canonPath, isDirOrInDir
 
 namespace nix::fetchers {
 

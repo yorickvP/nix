@@ -1,5 +1,21 @@
+#include <algorithm>           // for reverse
+#include <optional>            // for optional
+#include <string>              // for string, allocator, operator<
+#include <type_traits>         // for remove_reference<>::type
+#include <utility>             // for move, pair
+#include <vector>              // for vector
+
 #include "make-content-addressed.hh"
-#include "references.hh"
+#include "references.hh"       // for HashModuloSink, RewritingSink
+#include "content-address.hh"  // for ContentAddress, FileIngestionMethod
+#include "hash.hh"             // for hashString, htSHA256, HashResult
+#include "logging.hh"          // for Logger, printInfo
+#include "path-info.hh"        // for ValidPathInfo
+#include "ref.hh"              // for ref
+#include "serialise.hh"        // for StringSink, StringSource
+#include "store-api.hh"        // for Store
+#include "types.hh"            // for StringMap
+#include "util.hh"             // for rewriteStrings
 
 namespace nix {
 

@@ -1,7 +1,13 @@
-#include "experimental-features.hh"
-#include "util.hh"
+#include <assert.h>               // for assert
+#include <nlohmann/json_fwd.hpp>  // for json
+#include <map>                    // for map, operator!=, _Rb_tree_const_ite...
+#include <memory>                 // for unique_ptr<>::element_type, allocator
+#include <utility>                // for tuple_element<>::type
 
-#include "nlohmann/json.hpp"
+#include "experimental-features.hh"
+#include "util.hh"                // for get
+#include "nlohmann/json.hpp"      // for basic_json, basic_json<>::object_t
+#include "libutil/error.hh"       // for Error
 
 namespace nix {
 

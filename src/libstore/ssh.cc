@@ -1,4 +1,13 @@
+#include <unistd.h>          // for dup2, close, execvp, STDOUT_FILENO, STDE...
+#include <boost/format.hpp>  // for basic_altstringbuf<>::int_type, basic_al...
+#include <list>              // for _List_iterator, list, operator!=, _List_...
+#include <optional>          // for optional
+#include <utility>           // for move
+#include <vector>            // for vector
+
 #include "ssh.hh"
+#include "error.hh"          // for SysError, Error, lvlChatty
+#include "logging.hh"        // for verbosity
 
 namespace nix {
 

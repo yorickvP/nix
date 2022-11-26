@@ -1,10 +1,21 @@
-#include "store-api.hh"
-#include "remote-store.hh"
-#include "remote-fs-accessor.hh"
-#include "archive.hh"
-#include "worker-protocol.hh"
-#include "pool.hh"
-#include "ssh.hh"
+#include <boost/format.hpp>  // for basic_altstringbuf<>::int_type, basic_al...
+#include <map>               // for map, _Rb_tree_const_iterator
+#include <memory>            // for allocator, unique_ptr
+#include <optional>          // for optional
+#include <set>               // for set
+#include <string>            // for string, char_traits, operator+, basic_st...
+
+#include "store-api.hh"      // for StoreConfig, RegisterStoreImplementation
+#include "remote-store.hh"   // for RemoteStore, RemoteStoreConfig, RemoteSt...
+#include "pool.hh"           // for Pool
+#include "ssh.hh"            // for SSHMaster::Connection, SSHMaster
+#include "config.hh"         // for Setting, operator<<
+#include "fmt.hh"            // for fmt
+#include "path.hh"           // for StorePath
+#include "ref.hh"            // for ref, make_ref
+#include "serialise.hh"      // for FdSink, FdSource
+#include "types.hh"          // for Path, StringMap
+#include "util.hh"           // for AutoCloseFD, shellEscape
 
 namespace nix {
 

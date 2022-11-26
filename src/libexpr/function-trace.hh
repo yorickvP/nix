@@ -1,8 +1,8 @@
 #pragma once
 
-#include "eval.hh"
 
-#include <chrono>
+
+#include "nixexpr.hh"  // for Pos
 
 namespace nix {
 

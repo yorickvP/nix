@@ -1,9 +1,29 @@
-#include "primops.hh"
-#include "eval-inline.hh"
-#include "store-api.hh"
-#include "fetchers.hh"
-#include "url.hh"
-#include "url-parts.hh"
+#include <boost/format.hpp>  // for basic_altstringbuf<>::int_type, basic_al...
+#include <optional>          // for optional
+#include <regex>             // for regex_match, match_results<>::_Base_type
+#include <string>            // for basic_string, string, allocator, char_tr...
+#include <string_view>       // for string_view, operator==, basic_string_view
+#include <utility>           // for move
+#include <vector>            // for vector
+
+#include "primops.hh"        // for RegisterPrimOp
+#include "eval-inline.hh"    // for EvalState::forceAttrs, EvalState::forceV...
+#include "store-api.hh"      // for Store
+#include "fetchers.hh"       // for Input, Tree
+#include "url-parts.hh"      // for revRegex
+#include "attr-set.hh"       // for Attr, BindingsBuilder, Bindings
+#include "attrs.hh"          // for Attrs
+#include "config.hh"         // for Setting
+#include "error.hh"          // for Trace, ErrPos, Error
+#include "eval.hh"           // for EvalState, EvalSettings, evalSettings
+#include "fmt.hh"            // for hintfmt
+#include "hash.hh"           // for Hash, HashType, htSHA1
+#include "nixexpr.hh"        // for Pos, PosTable, EvalError, PosIdx
+#include "ref.hh"            // for ref
+#include "suggestions.hh"    // for Suggestion
+#include "symbol-table.hh"   // for operator<<, SymbolTable, SymbolStr
+#include "types.hh"          // for BackedStringView, PathSet
+#include "value.hh"          // for Value, Value::(anonymous), nAttrs
 
 namespace nix {
 

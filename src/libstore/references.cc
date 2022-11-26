@@ -1,11 +1,16 @@
-#include "references.hh"
-#include "hash.hh"
-#include "util.hh"
-#include "archive.hh"
+#include <assert.h>          // for assert
+#include <boost/format.hpp>  // for basic_format, basic_altstringbuf<>::int_...
+#include <map>               // for operator!=, map, _Rb_tree_const_iterator
+#include <cstdlib>           // for size_t
+#include <mutex>             // for call_once, once_flag
+#include <algorithm>         // for min
+#include <cstdint>           // for uint64_t
 
-#include <map>
-#include <cstdlib>
-#include <mutex>
+#include "references.hh"
+#include "hash.hh"           // for HashResult, HashSink, base32Chars, HashType
+#include "archive.hh"        // for dumpPath
+#include "fmt.hh"            // for fmt, format
+#include "logging.hh"        // for Logger, debug
 
 
 namespace nix {

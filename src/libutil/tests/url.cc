@@ -1,7 +1,15 @@
-#include "url.hh"
-#include <gtest/gtest.h>
+#include <gtest/gtest.h>  // for Test, TestInfo (ptr only), TEST, Message
+#include <ostream>        // for operator<<, basic_ostream, ostream
+#include <utility>        // for pair
+#include <map>            // for map, map<>::iterator, operator!=, _Rb_tree_...
+#include <optional>       // for optional
+#include <string>         // for string, allocator, operator<<, char_traits
+
+#include "url.hh"         // for parseURL, ParsedURL, decodeQuery, percentDe...
+#include "types.hh"       // for StringMap
 
 namespace nix {
+class Error;
 
 /* ----------- tests for url.hh --------------------------------------------------*/
 

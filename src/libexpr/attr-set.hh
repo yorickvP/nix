@@ -1,10 +1,14 @@
 #pragma once
 
-#include "nixexpr.hh"
-#include "symbol-table.hh"
+#include <assert.h>         // for assert
+#include <stdint.h>         // for uint32_t
+#include <algorithm>        // for lower_bound, sort
+#include <string>           // for char_traits
+#include <string_view>      // for operator<, string_view, basic_string_view
+#include <vector>           // for vector
 
-#include <algorithm>
-#include <optional>
+#include "nixexpr.hh"       // for noPos, PosIdx
+#include "symbol-table.hh"  // for Symbol, SymbolStr, SymbolTable
 
 namespace nix {
 

@@ -1,22 +1,42 @@
-#include "serialise.hh"
-#include "util.hh"
-#include "path-with-outputs.hh"
-#include "gc-store.hh"
-#include "remote-fs-accessor.hh"
-#include "build-result.hh"
+#include <nlohmann/json.hpp>         // for basic_json, basic_json<>::object_t
+#include <assert.h>                  // for assert
+#include <errno.h>                   // for EPIPE
+#include <stddef.h>                  // for size_t
+#include <algorithm>                 // for equal
+#include <functional>                // for function
+#include <initializer_list>          // for initializer_list
+#include <set>                       // for set
+#include <thread>                    // for thread
+#include <type_traits>               // for remove_reference<>::type
+#include <unordered_map>             // for _Map_base<>::mapped_type
+#include <utility>                   // for move, pair
+#include <variant>                   // for visit, get_if
+
+#include "serialise.hh"              // for operator<<, Sink, FdSink, FdSource
+#include "util.hh"                   // for get, chomp, ignoreException, ove...
+#include "path-with-outputs.hh"      // for StorePathWithOutputs
+#include "gc-store.hh"               // for GCOptions, Roots, GCResults
+#include "remote-fs-accessor.hh"     // for RemoteFSAccessor
+#include "build-result.hh"           // for BuildResult, BuildResult::Built
 #include "remote-store.hh"
-#include "worker-protocol.hh"
-#include "archive.hh"
-#include "globals.hh"
-#include "derivations.hh"
-#include "pool.hh"
-#include "finally.hh"
-#include "logging.hh"
-#include "callback.hh"
-#include "filetransfer.hh"
-#include <nlohmann/json.hpp>
+#include "worker-protocol.hh"        // for read, write, GET_PROTOCOL_MINOR
+#include "archive.hh"                // for copyNAR, dumpString
+#include "globals.hh"                // for Settings, settings, MaxBuildJobs...
+#include "derivations.hh"            // for Derivation, DerivationOutputsAnd...
+#include "pool.hh"                   // for Pool, Pool<>::Handle
+#include "finally.hh"                // for Finally
+#include "logging.hh"                // for ActivityId, Logger, Logger::Fields
+#include "callback.hh"               // for Callback
+#include "filetransfer.hh"           // for FileTransferSettings, fileTransf...
+#include "derived-path.hh"           // for DerivedPath, DerivedPath::Built
+#include "error.hh"                  // for Error, SysError, Verbosity, lvlE...
+#include "experimental-features.hh"  // for Xp
+#include "lru-cache.hh"              // for LRUCache
+#include "realisation.hh"            // for Realisation, DrvOutput, DrvOutputs
+#include "sync.hh"                   // for Sync, Sync<>::Lock
 
 namespace nix {
+class FSAccessor;
 
 namespace worker_proto {
 

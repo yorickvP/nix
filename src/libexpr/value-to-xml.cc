@@ -1,9 +1,20 @@
-#include "value-to-xml.hh"
-#include "xml-writer.hh"
-#include "eval-inline.hh"
-#include "util.hh"
+#include <boost/format.hpp>  // for basic_altstringbuf<>::int_type, basic_al...
+#include <map>               // for map<>::mapped_type, operator!=, _Rb_tree...
+#include <string>            // for allocator, basic_string, operator!=, ope...
+#include <string_view>       // for string_view
+#include <utility>           // for pair
+#include <vector>            // for vector
 
-#include <cstdlib>
+#include "value-to-xml.hh"
+#include "xml-writer.hh"     // for XMLAttrs, XMLWriter, XMLOpenElement
+#include "eval-inline.hh"    // for EvalState::forceValue
+#include "util.hh"           // for checkInterrupt
+#include "attr-set.hh"       // for Attr, Bindings, Bindings::iterator
+#include "eval.hh"           // for EvalState, copyContext
+#include "fmt.hh"            // for format
+#include "nixexpr.hh"        // for ExprLambda, PosIdx, Pos, Formals, PosTable
+#include "symbol-table.hh"   // for SymbolStr, SymbolTable, Symbol
+#include "value.hh"          // for Value, Value::(anonymous), Value::(anony...
 
 
 namespace nix {

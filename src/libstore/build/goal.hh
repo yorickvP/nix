@@ -1,8 +1,19 @@
 #pragma once
 
-#include "types.hh"
-#include "store-api.hh"
-#include "build-result.hh"
+#include <stdlib.h>         // for abort, size_t
+#include <map>              // for map
+#include <memory>           // for owner_less, enable_shared_from_this, shar...
+#include <optional>         // for optional
+#include <set>              // for set
+#include <string>           // for string
+#include <string_view>      // for string_view
+#include <utility>          // for move
+
+#include "build-result.hh"  // for BuildResult
+#include "derived-path.hh"  // for DerivedPath
+#include "error.hh"         // for Error
+#include "fmt.hh"           // for FormatOrString
+#include "path.hh"          // for StorePath
 
 namespace nix {
 

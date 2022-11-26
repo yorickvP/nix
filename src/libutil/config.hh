@@ -1,10 +1,16 @@
-#include <cassert>
-#include <map>
-#include <set>
+#include <nlohmann/json_fwd.hpp>  // for json
+#include <boost/format.hpp>       // for basic_altstringbuf<>::int_type, bas...
+#include <cassert>                // for assert
+#include <map>                    // for map, operator!=, operator==, map<>:...
+#include <set>                    // for set, operator!=, operator==
+#include <algorithm>              // for equal
+#include <list>                   // for list, operator!=, operator==
+#include <ostream>                // for ostream
+#include <string>                 // for string, basic_string, operator==
+#include <vector>                 // for max, vector
 
-#include "types.hh"
-
-#include <nlohmann/json_fwd.hpp>
+#include "types.hh"               // for Path, StringMap
+#include "libutil/fmt.hh"         // for fmt
 
 #pragma once
 

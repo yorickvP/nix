@@ -1,7 +1,20 @@
-#include "json-to-value.hh"
+#include <nlohmann/json.hpp>                   // for basic_json<>::object_t
+#include <assert.h>                            // for assert
+#include <cstddef>                             // for size_t
+#include <initializer_list>                    // for initializer_list
+#include <limits>                              // for numeric_limits
+#include <map>                                 // for operator!=, _Rb_tree_i...
+#include <memory>                              // for unique_ptr, make_unique
+#include <stdexcept>                           // for logic_error
+#include <utility>                             // for move, pair
+#include <vector>                              // for vector
 
-#include <variant>
-#include <nlohmann/json.hpp>
+#include "json-to-value.hh"
+#include "attr-set.hh"                         // for BindingsBuilder
+#include "eval-inline.hh"                      // for EvalState::allocValue
+#include "eval.hh"                             // for EvalState
+#include "symbol-table.hh"                     // for SymbolTable
+#include "value.hh"                            // for RootValue, Value, Valu...
 
 using json = nlohmann::json;
 

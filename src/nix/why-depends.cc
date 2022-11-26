@@ -1,10 +1,39 @@
-#include "command.hh"
-#include "store-api.hh"
-#include "progress-bar.hh"
-#include "fs-accessor.hh"
-#include "shared.hh"
+#include <assert.h>          // for assert
+#include <ctype.h>           // for isprint
+#include <stddef.h>          // for size_t
+#include <boost/format.hpp>  // for basic_altstringbuf<>::int_type, basic_al...
+#include <queue>             // for priority_queue
+#include <functional>        // for function
+#include <iostream>          // for operator<<, basic_ostream, cout, ostream
+#include <iterator>          // for reverse_iterator
+#include <limits>            // for numeric_limits
+#include <list>              // for list, _List_iterator, operator!=, _List_...
+#include <map>               // for operator!=, map, _Rb_tree_const_iterator
+#include <memory>            // for allocator, shared_ptr, __shared_ptr_access
+#include <optional>          // for optional
+#include <set>               // for set
+#include <string>            // for string, basic_string, char_traits, opera...
+#include <string_view>       // for string_view, operator==
+#include <utility>           // for pair, operator==
+#include <variant>           // for visit
 
-#include <queue>
+#include "command.hh"        // for registerCommand, SourceExprCommand, catS...
+#include "store-api.hh"      // for Store
+#include "progress-bar.hh"   // for stopProgressBar
+#include "fs-accessor.hh"    // for FSAccessor, FSAccessor::Stat, FSAccessor...
+#include "shared.hh"         // for RunPager
+#include "ansicolor.hh"      // for ANSI_NORMAL, ANSI_BLUE, ANSI_GREEN, ANSI...
+#include "args.hh"           // for Command::Category
+#include "derived-path.hh"   // for DerivedPath, DerivedPath::Opaque, Derive...
+#include "error.hh"          // for Error
+#include "fmt.hh"            // for fmt
+#include "installables.hh"   // for Installable, Realise, Realise::Outputs
+#include "logging.hh"        // for Logger, logger, printError
+#include "path-info.hh"      // for ValidPathInfo
+#include "path.hh"           // for StorePath, StorePathSet, StorePath::HashLen
+#include "ref.hh"            // for ref, nix
+#include "types.hh"          // for Strings, Path
+#include "util.hh"           // for treeLine, treeNull, treeConn, treeLast
 
 using namespace nix;
 
@@ -74,6 +103,7 @@ struct CmdWhyDepends : SourceExprCommand
     {
         return
           #include "why-depends.md"
+
           ;
     }
 

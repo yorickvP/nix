@@ -1,5 +1,15 @@
-#include "builtins.hh"
-#include "tarfile.hh"
+#include <map>             // for operator==, _Rb_tree_const_iterator, _Rb_t...
+#include <memory>          // for allocator, allocator_traits<>::value_type
+#include <string>          // for char_traits, operator+, basic_string, string
+#include <utility>         // for pair
+#include <vector>          // for vector
+
+#include "builtins.hh"     // for builtinUnpackChannel
+#include "tarfile.hh"      // for unpackTarfile
+#include "derivations.hh"  // for BasicDerivation
+#include "error.hh"        // for Error
+#include "types.hh"        // for StringPairs, Path
+#include "util.hh"         // for createDirs, readDirectory, renameFile
 
 namespace nix {
 

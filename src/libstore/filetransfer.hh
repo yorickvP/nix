@@ -1,13 +1,23 @@
 #pragma once
 
-#include "types.hh"
-#include "hash.hh"
-#include "config.hh"
+#include <stddef.h>     // for size_t
+#include <stdint.h>     // for uint64_t
+#include <string>       // for string, allocator, basic_string, operator<
+#include <future>       // for future
+#include <functional>   // for function
+#include <map>          // for map
+#include <optional>     // for optional
+#include <string_view>  // for string_view
 
-#include <string>
-#include <future>
+#include "types.hh"     // for Headers
+#include "config.hh"    // for Setting, Config
+#include "error.hh"     // for Error
+#include "logging.hh"   // for getCurActivity, ActivityId
+#include "ref.hh"       // for ref
 
 namespace nix {
+struct Sink;
+template <typename T> class Callback;
 
 struct FileTransferSettings : Config
 {
@@ -81,7 +91,6 @@ struct FileTransferResult
     uint64_t bodySize = 0;
 };
 
-class Store;
 
 struct FileTransfer
 {

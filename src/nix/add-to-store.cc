@@ -1,7 +1,20 @@
-#include "command.hh"
-#include "common-args.hh"
-#include "store-api.hh"
-#include "archive.hh"
+#include <boost/format.hpp>    // for basic_altstringbuf<>::int_type, basic_...
+#include <optional>            // for optional
+#include <string>              // for string, basic_string, allocator
+#include <string_view>         // for string_view
+
+#include "command.hh"          // for registerCommand2, StoreCommand
+#include "common-args.hh"      // for MixDryRun
+#include "store-api.hh"        // for Store
+#include "archive.hh"          // for dumpPath
+#include "content-address.hh"  // for ContentAddress, FileIngestionMethod
+#include "hash.hh"             // for HashSink, hashString, Hash, htSHA256
+#include "logging.hh"          // for Logger, logger
+#include "path-info.hh"        // for ValidPathInfo
+#include "ref.hh"              // for ref, nix
+#include "serialise.hh"        // for StringSink, StringSource
+#include "types.hh"            // for Path
+#include "util.hh"             // for baseNameOf, readFile
 
 using namespace nix;
 
@@ -76,6 +89,7 @@ struct CmdAddFile : CmdAddToStore
     {
         return
           #include "add-file.md"
+
           ;
     }
 };
@@ -96,6 +110,7 @@ struct CmdAddPath : CmdAddToStore
     {
         return
           #include "add-path.md"
+
           ;
     }
 };

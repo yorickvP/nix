@@ -1,6 +1,14 @@
-#include "command.hh"
-#include "store-api.hh"
-#include "archive.hh"
+#include <unistd.h>      // for STDOUT_FILENO
+#include <string>        // for string, basic_string, allocator
+
+#include "command.hh"    // for registerCommand2, StorePathCommand
+#include "store-api.hh"  // for Store
+#include "archive.hh"    // for dumpPath
+#include "args.hh"       // for completePath, Command
+#include "path.hh"       // for StorePath
+#include "ref.hh"        // for ref, nix
+#include "serialise.hh"  // for FdSink
+#include "types.hh"      // for Path
 
 using namespace nix;
 

@@ -1,4 +1,11 @@
-#include "command.hh"
+#include <optional>    // for optional
+#include <string>      // for string, basic_string, allocator
+#include <utility>     // for pair
+
+#include "command.hh"  // for registerCommand, NixMultiCommand, RegisterCommand
+#include "args.hh"     // for Command, Command::Category, MultiCommand
+#include "error.hh"    // for UsageError
+#include "ref.hh"      // for ref, nix
 
 using namespace nix;
 

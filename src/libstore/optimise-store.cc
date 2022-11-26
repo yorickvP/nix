@@ -1,15 +1,27 @@
-#include "util.hh"
-#include "local-store.hh"
-#include "globals.hh"
+#include <sys/stat.h>        // for stat, chmod, S_ISREG, S_ISDIR, S_ISLNK
+#include <unistd.h>          // for link, unlink, getpid
+#include <errno.h>           // for errno, EMLINK, EEXIST, ENOSPC
+#include <dirent.h>          // for opendir, readdir, dirent
+#include <fcntl.h>           // for S_IWUSR
+#include <stdint.h>          // for uint64_t
+#include <boost/format.hpp>  // for basic_format, basic_altstringbuf<>::int_...
+#include <cstdlib>           // for random
+#include <cstring>           // for strerror
+#include <list>              // for operator!=, _List_iterator, _List_iterat...
+#include <set>               // for set, operator!=, _Rb_tree_const_iterator
+#include <string>            // for basic_string, allocator, operator+, char...
 
-#include <cstdlib>
-#include <cstring>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <errno.h>
-#include <stdio.h>
-#include <regex>
+#include "util.hh"           // for lstat, checkInterrupt, AutoCloseDir, pat...
+#include "local-store.hh"    // for LocalStore, LocalStore::InodeHash, Optim...
+#include "globals.hh"        // for Settings, settings
+#include "config.hh"         // for PathSetting, Setting, operator<<
+#include "error.hh"          // for SysError, lvlTalkative
+#include "fmt.hh"            // for format, fmt
+#include "hash.hh"           // for hashPath, Hash, Base32, HashResult, htSH...
+#include "logging.hh"        // for Logger, warn, debug, Activity, printInfo
+#include "path.hh"           // for StorePath
+#include "repair-flag.hh"    // for RepairFlag, NoRepair
+#include "types.hh"          // for Path, PathView, Strings
 
 
 namespace nix {

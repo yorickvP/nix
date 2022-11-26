@@ -1,9 +1,20 @@
-#include "serialise.hh"
-#include "store-api.hh"
-#include "archive.hh"
-#include "worker-protocol.hh"
+#include <stdint.h>            // for uint64_t, uint32_t
+#include <algorithm>           // for equal, reverse
+#include <optional>            // for optional
+#include <set>                 // for operator!=, set
+#include <string>              // for string, allocator, basic_string, opera...
+#include <vector>              // for vector
 
-#include <algorithm>
+#include "serialise.hh"        // for operator<<, readString, Sink, readInt
+#include "store-api.hh"        // for Store, exportMagic, CheckSigsFlag
+#include "archive.hh"          // for parseDump, ParseSink
+#include "worker-protocol.hh"  // for read, write, Phantom
+#include "error.hh"            // for Error
+#include "hash.hh"             // for Hash, HashSink, hashString, Base32
+#include "path-info.hh"        // for ValidPathInfo
+#include "path.hh"             // for StorePath, StorePathSet, StorePaths
+#include "ref.hh"              // for ref
+#include "repair-flag.hh"      // for NoRepair
 
 namespace nix {
 

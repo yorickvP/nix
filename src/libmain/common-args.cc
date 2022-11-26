@@ -1,6 +1,20 @@
+#include <stddef.h>          // for size_t
+#include <boost/format.hpp>  // for basic_altstringbuf<>::int_type, basic_al...
+#include <map>               // for map, operator!=, _Rb_tree_iterator, _Rb_...
+#include <memory>            // for allocator, shared_ptr, __shared_ptr_access
+#include <set>               // for set
+#include <string_view>       // for string_view
+#include <utility>           // for pair
+
 #include "common-args.hh"
-#include "globals.hh"
-#include "loggers.hh"
+#include "globals.hh"        // for Settings, initPlugins, settings
+#include "loggers.hh"        // for setLogFormat
+#include "config.hh"         // for GlobalConfig, globalConfig, AbstractConf...
+#include "error.hh"          // for UsageError, Verbosity, lvlError, lvlDebug
+#include "fmt.hh"            // for fmt
+#include "logging.hh"        // for verbosity, warn
+#include "types.hh"          // for Strings
+#include "util.hh"           // for hasPrefix
 
 namespace nix {
 

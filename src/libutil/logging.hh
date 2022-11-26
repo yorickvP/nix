@@ -1,10 +1,17 @@
 #pragma once
 
-#include "types.hh"
-#include "error.hh"
-#include "config.hh"
+#include <nlohmann/json_fwd.hpp>  // for json
+#include <stdint.h>               // for uint64_t
+#include <boost/format.hpp>       // for basic_altstringbuf<>::int_type, format
+#include <map>                    // for map
+#include <optional>               // for optional
+#include <string>                 // for string, allocator, basic_string
+#include <string_view>            // for string_view
+#include <vector>                 // for max, vector
 
-#include <nlohmann/json_fwd.hpp>
+#include "error.hh"               // for Verbosity, lvlError, ErrorInfo, lvl...
+#include "config.hh"              // for Config, Setting
+#include "libutil/fmt.hh"         // for fmt, format, FormatOrString, format...
 
 namespace nix {
 

@@ -1,5 +1,7 @@
 #include "path-info.hh"
-#include "worker-protocol.hh"
+#include "worker-protocol.hh"  // for read, write, Phantom
+#include "serialise.hh"        // for operator<<, readString, operator>>, Sink
+#include "store-api.hh"        // for Store
 
 namespace nix {
 

@@ -1,6 +1,15 @@
-#include "command.hh"
-#include "shared.hh"
-#include "store-api.hh"
+#include <set>              // for set
+#include <string>           // for allocator, string
+#include <vector>           // for vector
+
+#include "command.hh"       // for BuiltPathsCommand, registerCommand, CopyC...
+#include "store-api.hh"     // for copyPaths, CheckSigsFlag, NoCheckSigs
+#include "args.hh"          // for Command::Category
+#include "derived-path.hh"  // for BuiltPaths, BuiltPath
+#include "installables.hh"  // for Realise, Realise::Outputs
+#include "realisation.hh"   // for RealisedPath::Set, RealisedPath
+#include "ref.hh"           // for ref, nix
+#include "repair-flag.hh"   // for NoRepair
 
 using namespace nix;
 

@@ -1,13 +1,29 @@
-#include "shared.hh"
-#include "globals.hh"
-#include "filetransfer.hh"
-#include "store-api.hh"
-#include "legacy.hh"
-#include "fetchers.hh"
+#include <fcntl.h>           // for open, O_CLOEXEC, O_CREAT, O_TRUNC, O_WRONLY
+#include <errno.h>           // for ENOENT, errno
+#include <sys/stat.h>        // for lstat, stat, S_ISLNK
+#include <unistd.h>          // for unlink
+#include <boost/format.hpp>  // for basic_altstringbuf<>::int_type, basic_al...
+#include <regex>             // for match_results<>::_Base_type, regex_search
+#include <iostream>          // for operator<<, basic_ostream, ostream, cerr
+#include <list>              // for _List_iterator, operator!=, _List_iterat...
+#include <map>               // for operator!=, _Rb_tree_iterator, _Rb_tree_...
+#include <sstream>           // for basic_stringbuf<>::int_type, basic_strin...
+#include <string>            // for string, allocator, operator+, basic_string
+#include <string_view>       // for string_view
+#include <utility>           // for move, pair, tuple_element<>::type
+#include <vector>            // for vector, max
 
-#include <fcntl.h>
-#include <regex>
-#include <pwd.h>
+#include "shared.hh"         // for parseCmdLine, printVersion, showManPage
+#include "globals.hh"        // for Settings, settings
+#include "filetransfer.hh"   // for FileTransferError
+#include "store-api.hh"      // for Store, openStore
+#include "legacy.hh"         // for MainFunction, RegisterLegacyCommand
+#include "fetchers.hh"       // for downloadFile, DownloadFileResult
+#include "error.hh"          // for UsageError, SysError, Error
+#include "fmt.hh"            // for fmt
+#include "ref.hh"            // for ref, nix
+#include "types.hh"          // for Strings, Path, StringSet
+#include "util.hh"           // for baseNameOf, runProgram, tokenizeString
 
 using namespace nix;
 
@@ -79,6 +95,7 @@ static void update(const StringSet & channelNames)
     auto [fd, unpackChannelPath] = createTempFile();
     writeFull(fd.get(),
         #include "unpack-channel.nix.gen.hh"
+
         );
     fd = -1;
     AutoDelete del(unpackChannelPath, false);

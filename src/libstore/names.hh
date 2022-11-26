@@ -1,8 +1,11 @@
 #pragma once
 
-#include <memory>
+#include <memory>       // for unique_ptr
+#include <list>         // for list
+#include <string>       // for string
+#include <string_view>  // for string_view
 
-#include "types.hh"
+#include "types.hh"     // for Strings
 
 namespace nix {
 

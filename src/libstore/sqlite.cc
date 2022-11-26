@@ -1,10 +1,17 @@
+#include <sqlite3.h>         // for SQLITE_OK, sqlite3_exec, sqlite3_expande...
+#include <assert.h>          // for assert
+#include <stdlib.h>          // for random
+#include <time.h>            // for nanosleep, time, timespec, time_t
+#include <boost/format.hpp>  // for basic_altstringbuf<>::int_type, basic_al...
+#include <atomic>            // for atomic, __atomic_base
+#include <utility>           // for move
+
 #include "sqlite.hh"
-#include "globals.hh"
-#include "util.hh"
-
-#include <sqlite3.h>
-
-#include <atomic>
+#include "globals.hh"        // for Settings, settings
+#include "util.hh"           // for ignoreException, checkInterrupt
+#include "config.hh"         // for Setting
+#include "logging.hh"        // for logWarning
+#include "suggestions.hh"    // for Suggestion
 
 namespace nix {
 

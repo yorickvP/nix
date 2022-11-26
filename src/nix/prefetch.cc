@@ -1,16 +1,48 @@
-#include "command.hh"
-#include "common-args.hh"
-#include "shared.hh"
-#include "store-api.hh"
-#include "filetransfer.hh"
-#include "finally.hh"
-#include "progress-bar.hh"
-#include "tarfile.hh"
-#include "attr-path.hh"
-#include "eval-inline.hh"
-#include "legacy.hh"
+#include <nlohmann/json.hpp>    // for basic_json<>::object_t, basic_json
+#include <assert.h>             // for assert
+#include <fcntl.h>              // for open, O_CREAT, O_EXCL, O_WRONLY
+#include <unistd.h>             // for isatty, STDERR_FILENO
+#include <boost/format.hpp>     // for basic_altstringbuf<>::int_type, basic...
+#include <functional>           // for function
+#include <iostream>             // for endl, basic_ostream, cout, ostream
+#include <list>                 // for _List_iterator
+#include <memory>               // for allocator, unique_ptr, allocator_trai...
+#include <optional>             // for optional, operator==
+#include <string>               // for string, basic_string, operator==, cha...
+#include <string_view>          // for string_view, operator==
+#include <tuple>                // for tuple
+#include <utility>              // for move, pair
+#include <vector>               // for vector, max
 
-#include <nlohmann/json.hpp>
+#include "command.hh"           // for registerCommand2, StoreCommand
+#include "common-args.hh"       // for MixJSON
+#include "shared.hh"            // for getArg, LegacyArgs, printVersion, sho...
+#include "store-api.hh"         // for Store, openStore
+#include "filetransfer.hh"      // for getFileTransfer, FileTransferRequest
+#include "finally.hh"           // for Finally
+#include "progress-bar.hh"      // for stopProgressBar, startProgressBar
+#include "tarfile.hh"           // for unpackTarfile
+#include "attr-path.hh"         // for findAlongAttrPath
+#include "eval-inline.hh"       // for EvalState::forceAttrs, EvalState::for...
+#include "legacy.hh"            // for MainFunction, RegisterLegacyCommand
+#include "args.hh"              // for argvToStrings, Args::Flag
+#include "attr-set.hh"          // for Attr, Bindings
+#include "common-eval-args.hh"  // for lookupFileArg, MixEvalArgs
+#include "content-address.hh"   // for getContentAddressHash, FileIngestionM...
+#include "error.hh"             // for Error, UsageError, lvlChatty, SysError
+#include "eval.hh"              // for EvalState, resolveExprPath
+#include "fmt.hh"               // for fmt
+#include "hash.hh"              // for Hash, HashType, parseHashType, printH...
+#include "logging.hh"           // for Logger, logger, Activity, actUnknown
+#include "nixexpr.hh"           // for noPos
+#include "path-info.hh"         // for ValidPathInfo
+#include "path.hh"              // for StorePath
+#include "ref.hh"               // for ref, nix
+#include "serialise.hh"         // for FdSink
+#include "symbol-table.hh"      // for SymbolTable
+#include "types.hh"             // for Path, Strings
+#include "util.hh"              // for baseNameOf, AutoCloseFD, AutoDelete
+#include "value.hh"             // for Value, Value::(anonymous)
 
 using namespace nix;
 
@@ -292,6 +324,7 @@ struct CmdStorePrefetchFile : StoreCommand, MixJSON
     {
         return
           #include "store-prefetch-file.md"
+
           ;
     }
     void run(ref<Store> store) override

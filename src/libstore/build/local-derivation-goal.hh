@@ -1,9 +1,25 @@
 #pragma once
 
-#include "derivation-goal.hh"
-#include "local-store.hh"
+#include <sys/types.h>         // for gid_t, uid_t
+#include <map>                 // for map, map<>::value_compare
+#include <memory>              // for allocator, unique_ptr, shared_ptr
+#include <set>                 // for set
+#include <string>              // for string, basic_string, operator<
+#include <string_view>         // for string_view
+#include <thread>              // for thread
+#include <vector>              // for vector
+
+#include "derivation-goal.hh"  // for DerivationGoal
+#include "lock.hh"             // for UserLock
+#include "path-info.hh"        // for ValidPathInfo
+#include "path.hh"             // for StorePath, StorePathSet, OutputPathMap
+#include "realisation.hh"      // for DrvOutput, DrvOutputs, Realisation (pt...
+#include "types.hh"            // for Path, StringMap
+#include "util.hh"             // for AutoCloseFD, Pipe, AutoDelete (ptr only)
 
 namespace nix {
+class LocalStore;
+struct DerivedPath;
 
 struct LocalDerivationGoal : public DerivationGoal
 {

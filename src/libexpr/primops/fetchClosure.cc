@@ -1,7 +1,31 @@
-#include "primops.hh"
-#include "store-api.hh"
-#include "make-content-addressed.hh"
-#include "url.hh"
+#include <assert.h>                   // for assert
+#include <boost/format.hpp>           // for basic_altstringbuf<>::int_type
+#include <map>                        // for _Rb_tree_iterator, map, operator!=
+#include <optional>                   // for optional
+#include <string>                     // for string, allocator, basic_string
+#include <utility>                    // for pair
+
+#include "primops.hh"                 // for RegisterPrimOp
+#include "store-api.hh"               // for Store, copyClosure, openStore
+#include "make-content-addressed.hh"  // for makeContentAddressed
+#include "url.hh"                     // for ParsedURL, parseURL
+#include "attr-set.hh"                // for Attr, Bindings
+#include "config.hh"                  // for Setting
+#include "error.hh"                   // for Trace, ErrPos, Error
+#include "eval-inline.hh"             // for EvalState::forceAttrs, EvalStat...
+#include "eval.hh"                    // for EvalState, EvalSettings, evalSe...
+#include "experimental-features.hh"   // for ExperimentalFeature, Xp
+#include "fmt.hh"                     // for hintfmt
+#include "nixexpr.hh"                 // for PosTable, Pos, PosIdx
+#include "path-info.hh"               // for ValidPathInfo
+#include "path.hh"                    // for StorePath
+#include "realisation.hh"             // for RealisedPath, RealisedPath::Set
+#include "ref.hh"                     // for ref
+#include "suggestions.hh"             // for Suggestion
+#include "symbol-table.hh"            // for operator<<, SymbolStr, SymbolTable
+#include "types.hh"                   // for PathSet
+#include "util.hh"                    // for getEnv
+#include "value.hh"                   // for Value, Value::(anonymous), Valu...
 
 namespace nix {
 

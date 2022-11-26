@@ -1,12 +1,26 @@
-#include "get-drvs.hh"
-#include "util.hh"
-#include "eval-inline.hh"
-#include "derivations.hh"
-#include "store-api.hh"
-#include "path-with-outputs.hh"
+#include <boost/format.hpp>        // for basic_altstringbuf<>::int_type
+#include <boost/lexical_cast.hpp>  // for bad_lexical_cast
+#include <cstring>                 // for strcmp
+#include <regex>                   // for regex_match, match_results<>::_Bas...
+#include <ostream>                 // for ios_base::failure
+#include <set>                     // for set
+#include <type_traits>             // for remove_reference<>::type
+#include <vector>                  // for vector
 
-#include <cstring>
-#include <regex>
+#include "get-drvs.hh"
+#include "util.hh"                 // for enumerate, getOr, iterable_wrapper
+#include "eval-inline.hh"          // for EvalState::forceAttrs, EvalState::...
+#include "derivations.hh"          // for Derivation, DerivationOutput, Deri...
+#include "store-api.hh"            // for Store
+#include "path-with-outputs.hh"    // for parsePathWithOutputs, StorePathWit...
+#include "attr-set.hh"             // for Bindings, Attr, Bindings::iterator
+#include "error.hh"                // for Error, UnimplementedError
+#include "eval.hh"                 // for EvalState
+#include "fmt.hh"                  // for fmt
+#include "logging.hh"              // for Logger, debug
+#include "nixexpr.hh"              // for TypeError, PosIdx, noPos, Assertio...
+#include "ref.hh"                  // for ref
+#include "symbol-table.hh"         // for SymbolTable, SymbolStr, Symbol
 
 
 namespace nix {

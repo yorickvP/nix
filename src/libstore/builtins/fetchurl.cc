@@ -1,8 +1,26 @@
-#include "builtins.hh"
-#include "filetransfer.hh"
-#include "store-api.hh"
-#include "archive.hh"
-#include "compression.hh"
+#include <sys/stat.h>        // for chmod
+#include <boost/format.hpp>  // for basic_altstringbuf<>::int_type, basic_al...
+#include <list>              // for list, operator!=, _List_const_iterator
+#include <map>               // for operator!=, operator==, _Rb_tree_const_i...
+#include <memory>            // for allocator, unique_ptr
+#include <optional>          // for optional
+#include <string>            // for string, basic_string, char_traits, opera...
+#include <utility>           // for move, pair
+
+#include "builtins.hh"       // for builtinFetchurl
+#include "filetransfer.hh"   // for FileTransferRequest, makeFileTransfer
+#include "archive.hh"        // for restorePath
+#include "compression.hh"    // for makeDecompressionSink
+#include "config.hh"         // for Setting
+#include "derivations.hh"    // for BasicDerivation
+#include "error.hh"          // for Error, SysError
+#include "globals.hh"        // for Settings, settings
+#include "hash.hh"           // for HashType, Hash, newHashAllowEmpty, parse...
+#include "logging.hh"        // for Logger, debug
+#include "ref.hh"            // for ref
+#include "serialise.hh"      // for sinkToSource, FinishSink, Sink (ptr only)
+#include "types.hh"          // for StringPairs, Path
+#include "util.hh"           // for hasSuffix, writeFile, getOr
 
 namespace nix {
 

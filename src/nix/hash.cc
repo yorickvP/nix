@@ -1,10 +1,26 @@
-#include "command.hh"
-#include "hash.hh"
-#include "content-address.hh"
-#include "legacy.hh"
-#include "shared.hh"
-#include "references.hh"
-#include "archive.hh"
+#include <assert.h>            // for assert
+#include <boost/format.hpp>    // for basic_altstringbuf<>::int_type, basic_...
+#include <list>                // for _List_iterator
+#include <memory>              // for allocator, make_unique, unique_ptr
+#include <optional>            // for optional
+#include <string>              // for string, basic_string, operator==, oper...
+#include <utility>             // for pair
+#include <vector>              // for vector
+
+#include "command.hh"          // for registerCommand, NixMultiCommand, catU...
+#include "hash.hh"             // for HashType, HashSink, AbstractHashSink
+#include "content-address.hh"  // for FileIngestionMethod, FileIngestionMeth...
+#include "legacy.hh"           // for MainFunction, RegisterLegacyCommand
+#include "shared.hh"           // for getArg, parseCmdLine, printVersion
+#include "references.hh"       // for HashModuloSink
+#include "archive.hh"          // for dumpPath
+#include "args.hh"             // for Command, completePath, Args::Flag, Com...
+#include "error.hh"            // for UsageError
+#include "fmt.hh"              // for fmt
+#include "logging.hh"          // for Logger, logger
+#include "ref.hh"              // for make_ref, ref, nix
+#include "types.hh"            // for Strings
+#include "util.hh"             // for readFile
 
 using namespace nix;
 

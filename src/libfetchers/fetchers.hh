@@ -1,14 +1,24 @@
 #pragma once
 
-#include "types.hh"
-#include "hash.hh"
-#include "path.hh"
-#include "attrs.hh"
-#include "url.hh"
+#include <stdint.h>     // for uint64_t
+#include <time.h>       // for time_t
+#include <memory>       // for shared_ptr
+#include <map>          // for map
+#include <optional>     // for optional
+#include <string>       // for string, basic_string
+#include <string_view>  // for string_view
+#include <utility>      // for pair
 
-#include <memory>
+#include "types.hh"     // for Path, Headers
+#include "path.hh"      // for StorePath
+#include "attrs.hh"     // for Attrs
+#include "url.hh"       // for ParsedURL
 
-namespace nix { class Store; }
+namespace nix {
+class Store;
+struct Hash;
+template <typename T> class ref;
+}  // namespace nix
 
 namespace nix::fetchers {
 

@@ -1,9 +1,15 @@
-#include "command.hh"
-#include "common-args.hh"
-#include "shared.hh"
-#include "store-api.hh"
+#include <nlohmann/json.hpp>  // for basic_json<>::object_t, basic_json, bas...
+#include <functional>         // for function
+#include <iostream>           // for endl, operator<<, ostream, basic_ostream
+#include <memory>             // for allocator, __shared_ptr_access, shared_ptr
+#include <string>             // for string, char_traits, operator<<
+#include <vector>             // for vector
 
-#include <nlohmann/json.hpp>
+#include "command.hh"         // for registerCommand, catUtility
+#include "common-args.hh"     // for MixJSON
+#include "store-api.hh"       // for StoreConfig, Implementations, Implement...
+#include "args.hh"            // for Command, Command::Category
+#include "ref.hh"             // for nix
 
 using namespace nix;
 

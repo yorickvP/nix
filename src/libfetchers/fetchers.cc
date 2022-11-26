@@ -1,7 +1,21 @@
-#include "fetchers.hh"
-#include "store-api.hh"
+#include <assert.h>              // for assert
+#include <boost/format.hpp>      // for basic_altstringbuf<>::int_type, basi...
+#include <cstdint>               // for uint64_t
+#include <ctime>                 // for time_t
+#include <type_traits>           // for remove_reference<>::type
+#include <variant>               // for operator==
+#include <vector>                // for vector
+#include <nlohmann/json.hpp>     // IWYU pragma: keep
 
-#include <nlohmann/json.hpp>
+#include "fetchers.hh"
+#include "store-api.hh"          // for Store
+#include "content-address.hh"    // for FileIngestionMethod, FileIngestionMe...
+#include "error.hh"              // for Error, ErrPos, UsageError
+#include "hash.hh"               // for Hash, HashType, SRI, htSHA256, BadHash
+#include "libfetchers/attrs.hh"  // for maybeGetStrAttr, attrsToJSON, Attrs
+#include "logging.hh"            // for Logger, debug
+#include "path-info.hh"          // for ValidPathInfo
+#include "ref.hh"                // for ref
 
 namespace nix::fetchers {
 

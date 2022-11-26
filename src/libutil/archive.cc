@@ -1,19 +1,23 @@
-#include <cerrno>
-#include <algorithm>
-#include <vector>
-#include <map>
-
-#include <strings.h> // for strcasecmp
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <dirent.h>
-#include <fcntl.h>
+#include <strings.h>                        // for strcasecmp
+#include <sys/stat.h>                       // for stat, fchmod, fstat, mkdir
+#include <fcntl.h>                          // for open, posix_fallocate
+#include <boost/format.hpp>                 // for basic_format, basic_altst...
+#include <cerrno>                           // for errno, EINVAL, ENOSYS
+#include <algorithm>                        // for min
+#include <vector>                           // for vector
+#include <map>                              // for map, operator!=, _Rb_tree...
+#include <functional>                       // for function
+#include <memory>                           // for unique_ptr
+#include <utility>                          // for pair
 
 #include "archive.hh"
-#include "util.hh"
-#include "config.hh"
+#include "util.hh"                          // for AutoCloseFD, checkInterrupt
+#include "config.hh"                        // for Setting, Config, GlobalCo...
+#include "libutil/error.hh"                 // for SysError, Error
+#include "libutil/fmt.hh"                   // for format
+#include "libutil/logging.hh"               // for Logger, debug
+#include "libutil/serialise.hh"             // for operator<<, Sink, readString
+#include "libutil/types.hh"                 // for Path
 
 namespace nix {
 

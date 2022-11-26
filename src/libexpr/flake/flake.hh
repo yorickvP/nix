@@ -1,15 +1,28 @@
 #pragma once
 
-#include "types.hh"
-#include "flakeref.hh"
-#include "lockfile.hh"
-#include "value.hh"
+#include <stdint.h>     // for int64_t
+#include <map>          // for map, map<>::value_compare
+#include <memory>       // for shared_ptr
+#include <optional>     // for optional, nullopt
+#include <set>          // for set
+#include <string>       // for string, basic_string, operator<
+#include <variant>      // for variant
+#include <vector>       // for vector
+
+#include "flakeref.hh"  // for FlakeId, FlakeRef
+#include "lockfile.hh"  // for InputPath, LockFile
+#include "hash.hh"      // for Hash
 
 namespace nix {
 
 class EvalState;
 
-namespace fetchers { struct Tree; }
+namespace fetchers {
+struct Tree;
+struct Input;
+}  // namespace fetchers
+struct Value;
+template <typename T> struct Explicit;
 
 namespace flake {
 

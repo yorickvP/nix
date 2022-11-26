@@ -1,7 +1,10 @@
-#include "types.hh"
+#include <stdint.h>                         // for uint8_t
+#include <memory>                           // for allocator
+
+#include "types.hh"                         // for StringSet
 
 #if HAVE_LIBCPUID
-#include <libcpuid/libcpuid.h>
+#include <libcpuid/libcpuid.h>              // for cpu_id_t, cpu_identify
 #endif
 
 namespace nix {

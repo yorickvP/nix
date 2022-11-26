@@ -1,7 +1,11 @@
-#include "serialise.hh"
-#include <archive.h>
+
+#include <string>            // for allocator, string
+#include <vector>            // for vector
+
+#include "libutil/types.hh"  // for Path
 
 namespace nix {
+struct Source;
 
 struct TarArchive {
     struct archive * archive;

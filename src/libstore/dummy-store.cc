@@ -1,7 +1,21 @@
-#include "store-api.hh"
-#include "callback.hh"
+#include <memory>          // for shared_ptr, allocator
+#include <optional>        // for optional
+#include <set>             // for set, _Rb_tree_const_iterator
+#include <string>          // for string, basic_string, operator<
+#include <string_view>     // for string_view
+
+#include "store-api.hh"    // for StoreConfig, Store, Store::Params, CheckSi...
+#include "callback.hh"     // for Callback
+#include "path.hh"         // for StorePath, StorePathSet
+#include "repair-flag.hh"  // for RepairFlag
+#include "types.hh"        // for StringMap
 
 namespace nix {
+struct DrvOutput;
+struct Realisation;
+struct Sink;
+struct Source;
+struct ValidPathInfo;
 
 struct DummyStoreConfig : virtual StoreConfig {
     using StoreConfig::StoreConfig;

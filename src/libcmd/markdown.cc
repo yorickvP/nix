@@ -1,9 +1,14 @@
-#include "markdown.hh"
-#include "util.hh"
-#include "finally.hh"
+#include <stddef.h>    // for size_t // IWYU pragma: keep
+#include <sys/queue.h> // IWYU pragma: keep
+#include <stdio.h>     // IWYU pragma: keep
+#include <lowdown.h>   // for lowdown_buf_free, lowdown_buf_new, lowdown_doc...
+#include <algorithm>   // for max
+#include <utility>     // for pair
 
-#include <sys/queue.h>
-#include <lowdown.h>
+#include "markdown.hh"
+#include "util.hh"     // for filterANSIEscapes, getWindowSize, shouldANSI
+#include "finally.hh"  // for Finally
+#include "error.hh"    // for Error
 
 namespace nix {
 

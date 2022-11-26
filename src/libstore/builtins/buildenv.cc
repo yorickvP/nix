@@ -1,9 +1,18 @@
-#include "buildenv.hh"
+#include <sys/stat.h>        // for stat, lstat, S_ISDIR, mkdir, S_ISLNK
+#include <errno.h>           // for ENOENT, ENOTDIR, errno
+#include <unistd.h>          // for unlink
+#include <boost/format.hpp>  // for basic_altstringbuf<>::int_type, basic_al...
+#include <algorithm>         // for sort
+#include <list>              // for list
+#include <map>               // for map, _Rb_tree_const_iterator, operator!=
+#include <set>               // for set
+#include <utility>           // for move, pair
 
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <fcntl.h>
-#include <algorithm>
+#include "buildenv.hh"
+#include "derivations.hh"    // for BasicDerivation
+#include "error.hh"          // for SysError, Error
+#include "logging.hh"        // for warn, Logger, debug
+#include "util.hh"           // for hasSuffix, createSymlink, tokenizeString
 
 namespace nix {
 

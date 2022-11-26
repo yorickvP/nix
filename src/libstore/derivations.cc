@@ -1,10 +1,20 @@
+#include <boost/container/small_vector.hpp>  // for small_vector
+#include <assert.h>                          // for assert
+#include <stddef.h>                          // for size_t
+#include <boost/format.hpp>                  // for basic_altstringbuf<>::in...
+#include <istream>                           // for istringstream, istream
+#include <list>                              // for operator!=, _List_iterator
+#include <type_traits>                       // for remove_reference<>::type
+
 #include "derivations.hh"
-#include "store-api.hh"
-#include "globals.hh"
-#include "util.hh"
-#include "worker-protocol.hh"
-#include "fs-accessor.hh"
-#include <boost/container/small_vector.hpp>
+#include "store-api.hh"                      // for Store
+#include "globals.hh"                        // for Settings, settings
+#include "util.hh"                           // for overloaded, rewriteStrings
+#include "worker-protocol.hh"                // for read, write, Phantom
+#include "error.hh"                          // for Error
+#include "experimental-features.hh"          // for Xp
+#include "logging.hh"                        // for warn, Logger, debug
+#include "serialise.hh"                      // for operator<<, Sink, readSt...
 
 namespace nix {
 

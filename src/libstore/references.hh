@@ -1,7 +1,16 @@
 #pragma once
 
-#include "hash.hh"
-#include "path.hh"
+#include <stdint.h>      // for uint64_t
+#include <map>           // for map
+#include <string>        // for string
+#include <string_view>   // for string_view
+#include <utility>       // for pair
+#include <vector>        // for vector
+
+#include "hash.hh"       // for HashResult, AbstractHashSink, HashSink, Hash...
+#include "path.hh"       // for StorePathSet, StorePath
+#include "serialise.hh"  // for Sink
+#include "types.hh"      // for StringSet, Path
 
 namespace nix {
 

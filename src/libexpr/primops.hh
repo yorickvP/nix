@@ -1,11 +1,16 @@
 #pragma once
 
-#include "eval.hh"
+#include <stddef.h>                  // for size_t
+#include <vector>                    // for max, vector
+#include <optional>                  // for optional
+#include <string>                    // for string, basic_string
 
-#include <tuple>
-#include <vector>
+#include "eval.hh"                   // for EvalState (ptr only), PrimOpFun
+#include "experimental-features.hh"  // for ExperimentalFeature
 
 namespace nix {
+class PosIdx;
+struct Value;
 
 struct RegisterPrimOp
 {

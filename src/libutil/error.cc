@@ -1,9 +1,18 @@
-#include "error.hh"
+#include <assert.h>                         // for assert
+#include <fcntl.h>                          // for open, O_CLOEXEC, O_RDONLY
+#include <boost/format.hpp>                 // for basic_altstringbuf<>::int...
+#include <optional>                         // for optional, nullopt, operat...
+#include <sstream>                          // for operator<<, ostream, ostr...
+#include <memory>                           // for allocator
+#include <set>                              // for set
 
-#include <iostream>
-#include <optional>
-#include "serialise.hh"
-#include <sstream>
+#include "error.hh"
+#include "libutil/ansicolor.hh"             // for ANSI_NORMAL, ANSI_WARNING
+#include "libutil/config.hh"                // for Setting
+#include "libutil/fmt.hh"                   // for fmt, hintformat, operator<<
+#include "libutil/logging.hh"               // for LoggerSettings, loggerSet...
+#include "libutil/suggestions.hh"           // for Suggestions, operator<<
+#include "libutil/util.hh"                  // for chomp, AutoCloseFD, filte...
 
 namespace nix {
 

@@ -1,19 +1,35 @@
-#include "globals.hh"
-#include "shared.hh"
-#include "eval.hh"
-#include "eval-inline.hh"
-#include "get-drvs.hh"
-#include "attr-path.hh"
-#include "value-to-xml.hh"
-#include "value-to-json.hh"
-#include "util.hh"
-#include "store-api.hh"
-#include "local-fs-store.hh"
-#include "common-eval-args.hh"
-#include "legacy.hh"
+#include <boost/format.hpp>     // for basic_altstringbuf<>::int_type, basic...
+#include <iostream>             // for cout, endl, ostream, operator<<, basi...
+#include <functional>           // for function
+#include <list>                 // for _List_iterator, operator!=, _List_ite...
+#include <memory>               // for allocator, unique_ptr, shared_ptr
+#include <optional>             // for optional
+#include <string>               // for operator==, basic_string, char_traits
+#include <string_view>          // for string_view
+#include <utility>              // for pair
 
-#include <map>
-#include <iostream>
+#include "globals.hh"           // for Settings, settings
+#include "shared.hh"            // for getArg, LegacyArgs, printGCWarning
+#include "eval.hh"              // for EvalState, resolveExprPath
+#include "eval-inline.hh"       // for EvalState::forceValue
+#include "get-drvs.hh"          // for DrvInfos, getDerivations, DrvInfo
+#include "attr-path.hh"         // for findAlongAttrPath
+#include "value-to-xml.hh"      // for printValueAsXML
+#include "value-to-json.hh"     // for printValueAsJSON
+#include "util.hh"              // for absPath, baseNameOf
+#include "store-api.hh"         // for openStore, Store
+#include "local-fs-store.hh"    // for LocalFSStore
+#include "common-eval-args.hh"  // for lookupFileArg, MixEvalArgs
+#include "legacy.hh"            // for MainFunction, RegisterLegacyCommand
+#include "args.hh"              // for argvToStrings
+#include "attr-set.hh"          // for Bindings
+#include "error.hh"             // for Error
+#include "fmt.hh"               // for fmt
+#include "nixexpr.hh"           // for noPos, PosIdx, Expr
+#include "ref.hh"               // for ref, nix
+#include "repair-flag.hh"       // for RepairFlag, NoRepair, Repair
+#include "types.hh"             // for Strings, Path, PathSet
+#include "value.hh"             // for Value
 
 
 using namespace nix;

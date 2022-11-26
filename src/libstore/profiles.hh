@@ -1,14 +1,22 @@
 #pragma once
 
-#include "types.hh"
-#include "pathlocks.hh"
+#include <time.h>       // for time_t
+#include <stdint.h>     // for uint64_t
+#include <list>         // for list
+#include <optional>     // for optional
+#include <set>          // for set
+#include <string>       // for basic_string, string
+#include <string_view>  // for string_view
+#include <utility>      // for pair
 
-#include <time.h>
+#include "types.hh"     // for Path
 
 
 namespace nix {
 
 class StorePath;
+class PathLocks;
+template <typename T> class ref;
 
 
 typedef uint64_t GenerationNumber;

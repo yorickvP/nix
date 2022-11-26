@@ -1,18 +1,56 @@
-#include "command.hh"
-#include "common-args.hh"
-#include "shared.hh"
-#include "store-api.hh"
-#include "derivations.hh"
-#include "archive.hh"
-#include "builtins/buildenv.hh"
-#include "flake/flakeref.hh"
-#include "../nix-env/user-env.hh"
-#include "profiles.hh"
-#include "names.hh"
+#include <nlohmann/json.hpp>       // for basic_json<>::object_t, basic_json
+#include <cxxabi.h>                // for __forced_unwind
+#include <boost/format.hpp>        // for basic_altstringbuf<>::int_type
+#include <boost/lexical_cast.hpp>  // for bad_lexical_cast
+#include <regex>                   // for regex, operator|, regex_match, _NFA
+#include <iomanip>                 // for operator<<, put_time
+#include <algorithm>               // for max, lexicographical_compare, sort
+#include <cstdint>                 // for int64_t
+#include <ctime>                   // for size_t, gmtime
+#include <initializer_list>        // for initializer_list
+#include <iostream>                // for cout, ostream, operator<<
+#include <list>                    // for operator!=, list, _List_iterator
+#include <map>                     // for operator!=, map, _Rb_tree_const_it...
+#include <memory>                  // for allocator, shared_ptr, __shared_pt...
+#include <optional>                // for optional, operator==
+#include <set>                     // for operator<, set
+#include <sstream>                 // for basic_stringbuf<>::int_type, basic...
+#include <string>                  // for string, basic_string, operator+
+#include <string_view>             // for string_view
+#include <tuple>                   // for operator<, tuple
+#include <type_traits>             // for remove_reference<>::type, add_cons...
+#include <utility>                 // for pair, move, tuple_element<>::type
+#include <variant>                 // for get_if, operator<, visit, variant
+#include <vector>                  // for vector
 
-#include <nlohmann/json.hpp>
-#include <regex>
-#include <iomanip>
+#include "command.hh"              // for MixDefaultProfile, StoreCommand
+#include "common-args.hh"          // for MixDryRun
+#include "store-api.hh"            // for Store, bmNormal
+#include "archive.hh"              // for dumpPath
+#include "builtins/buildenv.hh"    // for buildProfile, Packages
+#include "flake/flakeref.hh"       // for FlakeRef, parseFlakeRef, operator<<
+#include "../nix-env/user-env.hh"  // for queryInstalled
+#include "profiles.hh"             // for Generation, GenerationNumber, find...
+#include "names.hh"                // for DrvName
+#include "ansicolor.hh"            // for ANSI_BOLD, ANSI_GREEN, ANSI_NORMAL
+#include "args.hh"                 // for Command, Args, MultiCommand
+#include "content-address.hh"      // for ContentAddress, FileIngestionMethod
+#include "derived-path.hh"         // for BuiltPaths, BuiltPath, BuiltPath::...
+#include "error.hh"                // for UsageError, Error, lvlChatty
+#include "eval.hh"                 // for EvalState
+#include "fetchers.hh"             // for Input
+#include "fmt.hh"                  // for fmt
+#include "get-drvs.hh"             // for DrvInfo
+#include "hash.hh"                 // for hashString, htSHA256
+#include "installables.hh"         // for InstallableFlake, Installable, Ins...
+#include "logging.hh"              // for warn, Logger, logger, printInfo
+#include "path-info.hh"            // for ValidPathInfo
+#include "path-with-outputs.hh"    // for OutputsSpec, printOutputsSpec
+#include "path.hh"                 // for StorePathSet, StorePath
+#include "ref.hh"                  // for make_ref, ref, nix
+#include "serialise.hh"            // for StringSink, StringSource
+#include "types.hh"                // for Path, StringSet, Strings
+#include "util.hh"                 // for concatStringsSep, pathExists, crea...
 
 using namespace nix;
 
@@ -283,6 +321,7 @@ struct CmdProfileInstall : InstallablesCommand, MixDefaultProfile
     {
         return
           #include "profile-install.md"
+
           ;
     }
 
@@ -389,6 +428,7 @@ struct CmdProfileRemove : virtual EvalCommand, MixDefaultProfile, MixProfileElem
     {
         return
           #include "profile-remove.md"
+
           ;
     }
 
@@ -441,6 +481,7 @@ struct CmdProfileUpgrade : virtual SourceExprCommand, MixDefaultProfile, MixProf
     {
         return
           #include "profile-upgrade.md"
+
           ;
     }
 
@@ -533,6 +574,7 @@ struct CmdProfileList : virtual EvalCommand, virtual StoreCommand, MixDefaultPro
     {
         return
           #include "profile-list.md"
+
           ;
     }
 
@@ -561,6 +603,7 @@ struct CmdProfileDiffClosures : virtual StoreCommand, MixDefaultProfile
     {
         return
           #include "profile-diff-closures.md"
+
           ;
     }
 
@@ -598,6 +641,7 @@ struct CmdProfileHistory : virtual StoreCommand, EvalCommand, MixDefaultProfile
     {
         return
           #include "profile-history.md"
+
           ;
     }
 
@@ -653,6 +697,7 @@ struct CmdProfileRollback : virtual StoreCommand, MixDefaultProfile, MixDryRun
     {
         return
           #include "profile-rollback.md"
+
           ;
     }
 
@@ -688,6 +733,7 @@ struct CmdProfileWipeHistory : virtual StoreCommand, MixDefaultProfile, MixDryRu
     {
         return
           #include "profile-wipe-history.md"
+
           ;
     }
 
@@ -724,6 +770,7 @@ struct CmdProfile : NixMultiCommand
     {
         return
           #include "profile.md"
+
           ;
     }
 

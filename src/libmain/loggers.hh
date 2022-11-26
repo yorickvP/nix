@@ -1,6 +1,6 @@
 #pragma once
 
-#include "types.hh"
+#include <string>  // for string
 
 namespace nix {
 

@@ -1,9 +1,19 @@
 #pragma once
 
-#include "remote-store.hh"
-#include "local-fs-store.hh"
+#include <optional>           // for optional
+#include <set>                // for set
+#include <string>             // for string, basic_string, allocator, operator<
+
+#include "remote-store.hh"    // for RemoteStore, RemoteStoreConfig, RemoteS...
+#include "local-fs-store.hh"  // for LocalFSStore, LocalFSStoreConfig
+#include "path.hh"            // for StorePath
+#include "ref.hh"             // for ref
+#include "store-api.hh"       // for Store::Params, Store, StoreConfig
+#include "util.hh"            // for AutoCloseFD
 
 namespace nix {
+class FSAccessor;
+struct Sink;
 
 struct UDSRemoteStoreConfig : virtual LocalFSStoreConfig, virtual RemoteStoreConfig
 {

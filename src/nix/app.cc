@@ -1,10 +1,26 @@
-#include "installables.hh"
-#include "store-api.hh"
-#include "eval-inline.hh"
-#include "eval-cache.hh"
-#include "names.hh"
-#include "command.hh"
-#include "derivations.hh"
+#include <map>                   // for map, operator!=, _Rb_tree_const_iter...
+#include <memory>                // for shared_ptr, allocator, __shared_ptr_...
+#include <optional>              // for optional, nullopt
+#include <string>                // for string, char_traits, operator<, basi...
+#include <type_traits>           // for remove_reference<>::type, add_const<...
+#include <utility>               // for move, tuple_element<>::type
+#include <variant>               // for get_if
+#include <vector>                // for vector, max
+
+#include "installables.hh"       // for App, UnresolvedApp, Installable, Bui...
+#include "store-api.hh"          // for Store
+#include "eval-cache.hh"         // for AttrCursor
+#include "names.hh"              // for DrvName
+#include "derivations.hh"        // for downstreamPlaceholder
+#include "derived-path.hh"       // for DerivedPath, BuiltPath, BuiltPathBui...
+#include "error.hh"              // for Error
+#include "eval.hh"               // for EvalState
+#include "path-with-outputs.hh"  // for StorePathWithOutputs
+#include "path.hh"               // for StorePath
+#include "ref.hh"                // for ref
+#include "symbol-table.hh"       // for SymbolStr, SymbolTable
+#include "types.hh"              // for StringPairs, Path
+#include "util.hh"               // for rewriteStrings
 
 namespace nix {
 

@@ -1,12 +1,15 @@
 #pragma once
 
-#include "types.hh"
+#include <nlohmann/json_fwd.hpp>  // for json
+#include <stdint.h>               // for uint64_t
+#include <variant>                // for variant
+#include <optional>               // for optional
+#include <map>                    // for map, map<>::value_compare
+#include <string>                 // for string, basic_string, operator<
 
-#include <variant>
-
-#include <nlohmann/json_fwd.hpp>
-
-#include <optional>
+namespace nix {
+template <typename T> struct Explicit;
+}  // namespace nix
 
 namespace nix::fetchers {
 

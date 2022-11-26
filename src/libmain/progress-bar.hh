@@ -1,8 +1,7 @@
 #pragma once
 
-#include "logging.hh"
-
 namespace nix {
+class Logger;
 
 Logger * makeProgressBar();
 

@@ -1,13 +1,22 @@
 #pragma once
 
-#include "types.hh"
-#include "lock.hh"
-#include "store-api.hh"
-#include "goal.hh"
-#include "realisation.hh"
+#include <stdint.h>            // for uint64_t
+#include <chrono>              // for steady_clock, time_point
+#include <functional>          // for function
+#include <list>                // for list
+#include <map>                 // for map
+#include <memory>              // for shared_ptr, weak_ptr, unique_ptr
+#include <optional>            // for optional, nullopt
+#include <set>                 // for set
 
-#include <future>
-#include <thread>
+#include "types.hh"            // for StringSet
+#include "store-api.hh"        // for Store (ptr only), bmNormal, BuildMode
+#include "goal.hh"             // for GoalPtr, WeakGoals, Goal (ptr only)
+#include "realisation.hh"      // for DrvOutput
+#include "content-address.hh"  // for ContentAddress
+#include "logging.hh"          // for Activity, actCopyPath, actFileTransfer
+#include "path.hh"             // for StorePath
+#include "repair-flag.hh"      // for NoRepair, RepairFlag
 
 namespace nix {
 
@@ -15,6 +24,7 @@ namespace nix {
 struct DerivationGoal;
 struct PathSubstitutionGoal;
 class DrvOutputSubstitutionGoal;
+struct BasicDerivation;
 
 /* Workaround for not being able to declare a something like
 

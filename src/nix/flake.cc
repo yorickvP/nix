@@ -1,23 +1,59 @@
-#include "command.hh"
-#include "common-args.hh"
-#include "shared.hh"
-#include "eval.hh"
-#include "eval-inline.hh"
-#include "flake/flake.hh"
-#include "get-drvs.hh"
-#include "store-api.hh"
-#include "derivations.hh"
-#include "path-with-outputs.hh"
-#include "attr-path.hh"
-#include "fetchers.hh"
-#include "registry.hh"
-#include "json.hh"
-#include "eval-cache.hh"
-#include "markdown.hh"
+#include <nlohmann/json.hpp>         // for basic_json<>::object_t, basic_json
+#include <assert.h>                  // for assert
+#include <cxxabi.h>                  // for __forced_unwind
+#include <sys/stat.h>                // for stat, S_ISDIR, S_ISLNK, S_ISREG
+#include <boost/format.hpp>          // for basic_altstringbuf<>::int_type
+#include <iomanip>                   // for put_time, operator<<
+#include <ctime>                     // for localtime, size_t
+#include <functional>                // for function
+#include <iostream>                  // for cout
+#include <map>                       // for map, operator!=, _Rb_tree_const_...
+#include <memory>                    // for allocator, shared_ptr, __shared_...
+#include <optional>                  // for optional, nullopt
+#include <string>                    // for string, basic_string, operator==
+#include <string_view>               // for operator!=, operator==, string_view
+#include <type_traits>               // for remove_reference<>::type, add_co...
+#include <unordered_set>             // for unordered_set
+#include <utility>                   // for make_pair, move, pair, tuple_ele...
+#include <variant>                   // for get_if
+#include <vector>                    // for vector, max
 
-#include <nlohmann/json.hpp>
-#include <queue>
-#include <iomanip>
+#include "command.hh"                // for completeFlakeRef, completeFlakeR...
+#include "common-args.hh"            // for MixJSON, MixDryRun
+#include "eval.hh"                   // for EvalState, EvalSettings, evalSet...
+#include "eval-inline.hh"            // for EvalState::forceAttrs, EvalState...
+#include "flake/flake.hh"            // for LockedFlake, Flake, LockFlags
+#include "get-drvs.hh"               // for getDerivation, DrvInfo
+#include "store-api.hh"              // for Store, openStore, copyPaths
+#include "path-with-outputs.hh"      // for DefaultOutputs, OutputsSpec
+#include "attr-path.hh"              // for findAlongAttrPath
+#include "fetchers.hh"               // for Input, Tree
+#include "json.hh"                   // for JSONObject
+#include "eval-cache.hh"             // for AttrCursor, EvalCache
+#include "markdown.hh"               // for renderMarkdownToTerminal
+#include "ansicolor.hh"              // for ANSI_NORMAL, ANSI_BOLD, ANSI_WAR...
+#include "args.hh"                   // for completePath, Args, Command, Mul...
+#include "attr-set.hh"               // for Attr, Bindings
+#include "attrs.hh"                  // for attrsToJSON
+#include "config.hh"                 // for Setting
+#include "derived-path.hh"           // for DerivedPath, DerivedPath::Built
+#include "error.hh"                  // for Error, ErrPos, lvlChatty, lvlInfo
+#include "experimental-features.hh"  // for Xp
+#include "flake/flakeref.hh"         // for FlakeRef, operator<<, parseFlakeRef
+#include "flake/lockfile.hh"         // for LockFile, Node, LockedNode, prin...
+#include "fmt.hh"                    // for fmt, hintfmt
+#include "globals.hh"                // for Settings, settings
+#include "hash.hh"                   // for Hash, Base16, SRI
+#include "installables.hh"           // for openEvalCache, InstallableFlake
+#include "logging.hh"                // for Logger, logger, warn, Activity
+#include "nixexpr.hh"                // for Pos, PosIdx, ExprLambda, EvalError
+#include "path-info.hh"              // for ValidPathInfo
+#include "path.hh"                   // for StorePath, StorePathSet
+#include "ref.hh"                    // for ref, make_ref, nix
+#include "symbol-table.hh"           // for SymbolStr, SymbolTable, operator<<
+#include "types.hh"                  // for Path, Strings, PathSet
+#include "util.hh"                   // for absPath, pathExists, concatStrin...
+#include "value.hh"                  // for Value, Value::(anonymous), Value...
 
 using namespace nix;
 using namespace nix::flake;
@@ -76,6 +112,7 @@ struct CmdFlakeUpdate : FlakeCommand
     {
         return
           #include "flake-update.md"
+
           ;
     }
 
@@ -108,6 +145,7 @@ struct CmdFlakeLock : FlakeCommand
     {
         return
           #include "flake-lock.md"
+
           ;
     }
 
@@ -158,6 +196,7 @@ struct CmdFlakeMetadata : FlakeCommand, MixJSON
     {
         return
           #include "flake-metadata.md"
+
           ;
     }
 
@@ -277,6 +316,7 @@ struct CmdFlakeCheck : FlakeCommand
     {
         return
           #include "flake-check.md"
+
           ;
     }
 
@@ -818,6 +858,7 @@ struct CmdFlakeInit : CmdFlakeInitCommon
     {
         return
           #include "flake-init.md"
+
           ;
     }
 
@@ -838,6 +879,7 @@ struct CmdFlakeNew : CmdFlakeInitCommon
     {
         return
           #include "flake-new.md"
+
           ;
     }
 
@@ -864,6 +906,7 @@ struct CmdFlakeClone : FlakeCommand
     {
         return
           #include "flake-clone.md"
+
           ;
     }
 
@@ -910,6 +953,7 @@ struct CmdFlakeArchive : FlakeCommand, MixJSON, MixDryRun
     {
         return
           #include "flake-archive.md"
+
           ;
     }
 
@@ -976,6 +1020,7 @@ struct CmdFlakeShow : FlakeCommand, MixJSON
     {
         return
           #include "flake-show.md"
+
           ;
     }
 
@@ -1178,6 +1223,7 @@ struct CmdFlakePrefetch : FlakeCommand, MixJSON
     {
         return
           #include "flake-prefetch.md"
+
           ;
     }
 
@@ -1230,6 +1276,7 @@ struct CmdFlake : NixMultiCommand
     {
         return
           #include "flake.md"
+
           ;
     }
 

@@ -1,16 +1,36 @@
 #pragma once
 
-#include "crypto.hh"
-#include "store-api.hh"
-#include "log-store.hh"
+#include <functional>          // for function
+#include <istream>             // for basic_iostream
+#include <map>                 // for map
+#include <memory>              // for allocator, shared_ptr, unique_ptr
+#include <optional>            // for optional
+#include <string>              // for string
+#include <string_view>         // for string_view
 
-#include "pool.hh"
-
-#include <atomic>
+#include "crypto.hh"           // for SecretKey
+#include "store-api.hh"        // for StoreConfig, CheckSigsFlag, Store, Sto...
+#include "log-store.hh"        // for LogStore
+#include "config.hh"           // for Setting
+#include "content-address.hh"  // for FileIngestionMethod
+#include "error.hh"            // for Error, MakeError
+#include "hash.hh"             // for HashType, HashResult
+#include "path.hh"             // for StorePath, StorePathSet
+#include "ref.hh"              // for ref
+#include "repair-flag.hh"      // for RepairFlag
+#include "types.hh"            // for Path, StringMap, StringSet
+#include "util.hh"             // for PathFilter
 
 namespace nix {
 
 struct NarInfo;
+class FSAccessor;
+struct DrvOutput;
+struct Realisation;
+struct Sink;
+struct Source;
+struct ValidPathInfo;
+template <typename T> class Callback;
 
 struct BinaryCacheStoreConfig : virtual StoreConfig
 {

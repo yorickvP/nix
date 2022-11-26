@@ -1,9 +1,30 @@
-#include "worker.hh"
-#include "substitution-goal.hh"
-#include "derivation-goal.hh"
-#include "local-store.hh"
+#include <boost/format.hpp>      // for basic_altstringbuf<>::int_type, basi...
+#include <map>                   // for operator!=, _Rb_tree_const_iterator
+#include <memory>                // for shared_ptr, __shared_ptr_access, __s...
+#include <optional>              // for optional
+#include <string>                // for string
+#include <variant>               // for visit
+#include <vector>                // for vector
+
+#include "worker.hh"             // for Worker
+#include "substitution-goal.hh"  // for PathSubstitutionGoal
+#include "derivation-goal.hh"    // for DerivationGoal
+#include "local-store.hh"        // for LocalStore
+#include "build-result.hh"       // for BuildResult, BuildResult::MiscFailure
+#include "derived-path.hh"       // for DerivedPath::Built, DerivedPath, Der...
+#include "error.hh"              // for Error
+#include "goal.hh"               // for Goals, Goal, GoalPtr, Goal::ecSuccess
+#include "logging.hh"            // for logError
+#include "path-info.hh"          // for ValidPathInfo
+#include "path.hh"               // for StorePathSet, StorePath
+#include "ref.hh"                // for ref
+#include "repair-flag.hh"        // for Repair, NoRepair
+#include "store-api.hh"          // for BuildMode, Store, bmRepair
+#include "types.hh"              // for StringSet
+#include "util.hh"               // for overloaded
 
 namespace nix {
+struct BasicDerivation;
 
 void Store::buildPaths(const std::vector<DerivedPath> & reqs, BuildMode buildMode, std::shared_ptr<Store> evalStore)
 {

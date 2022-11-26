@@ -1,28 +1,62 @@
 #if ENABLE_S3
 
-#include "s3.hh"
-#include "s3-binary-cache-store.hh"
-#include "nar-info.hh"
-#include "nar-info-disk-cache.hh"
-#include "globals.hh"
-#include "compression.hh"
-#include "filetransfer.hh"
+#include <aws/core/Aws.h>                               // for SDKOptions
+#include <aws/core/auth/AWSCredentialsProvider.h>       // for ProfileConfig...
+#include <aws/core/auth/AWSCredentialsProviderChain.h>  // for DefaultAWSCre...
+#include <aws/core/client/ClientConfiguration.h>        // for ClientConfigu...
+#include <aws/core/client/DefaultRetryStrategy.h>       // for DefaultRetryS...
+#include <aws/core/utils/logging/FormattedLogSystem.h>  // for FormattedLogS...
+#include <aws/core/utils/threading/Executor.h>          // for PooledThreadE...
+#include <aws/s3/S3Client.h>                            // for S3Client
+#include <aws/s3/model/GetObjectRequest.h>              // for GetObjectRequest
+#include <aws/s3/model/HeadObjectRequest.h>             // for HeadObjectReq...
+#include <aws/s3/model/ListObjectsRequest.h>            // for ListObjectsRe...
+#include <aws/s3/model/PutObjectRequest.h>              // for PutObjectRequest
+#include <aws/transfer/TransferManager.h>               // for TransferManag...
+#include <aws/core/Region.h>                            // for US_EAST_1
+#include <aws/core/auth/AWSAuthSigner.h>                // for AWSAuthV4Signer
+#include <aws/core/client/AWSError.h>                   // for AWSError
+#include <aws/core/client/CoreErrors.h>                 // for CoreErrors
+#include <aws/core/http/Scheme.h>                       // for FromString
+#include <aws/core/utils/Outcome.h>                     // for Outcome
+#include <aws/core/utils/logging/LogLevel.h>            // for LogLevel, Log...
+#include <aws/core/utils/memory/AWSMemory.h>            // for New
+#include <aws/core/utils/memory/stl/AWSMap.h>           // for Map
+#include <aws/core/utils/memory/stl/AWSStreamFwd.h>     // for IOStream
+#include <aws/core/utils/memory/stl/AWSString.h>        // for String
+#include <aws/s3/S3Errors.h>                            // for S3Error, S3Er...
+#include <aws/s3/model/GetObjectResult.h>               // for GetObjectResult
+#include <aws/s3/model/ListObjectsResult.h>             // for ListObjectsRe...
+#include <aws/s3/model/Object.h>                        // for Object
+#include <aws/transfer/TransferHandle.h>                // for TransferHandle
+#include <boost/format.hpp>                             // for basic_format
+#include <chrono>                                       // for milliseconds
+#include <functional>                                   // for function
+#include <map>                                          // for map
+#include <memory>                                       // for allocator
+#include <mutex>                                        // for call_once
+#include <optional>                                     // for optional
+#include <set>                                          // for set
+#include <sstream>                                      // for stringstream
+#include <string>                                       // for string, basic...
+#include <thread>                                       // for thread
+#include <utility>                                      // for move
+#include <vector>                                       // for vector, max
 
-#include <aws/core/Aws.h>
-#include <aws/core/VersionConfig.h>
-#include <aws/core/auth/AWSCredentialsProvider.h>
-#include <aws/core/auth/AWSCredentialsProviderChain.h>
-#include <aws/core/client/ClientConfiguration.h>
-#include <aws/core/client/DefaultRetryStrategy.h>
-#include <aws/core/utils/logging/FormattedLogSystem.h>
-#include <aws/core/utils/logging/LogMacros.h>
-#include <aws/core/utils/threading/Executor.h>
-#include <aws/s3/S3Client.h>
-#include <aws/s3/model/GetObjectRequest.h>
-#include <aws/s3/model/HeadObjectRequest.h>
-#include <aws/s3/model/ListObjectsRequest.h>
-#include <aws/s3/model/PutObjectRequest.h>
-#include <aws/transfer/TransferManager.h>
+#include "s3.hh"                                        // for S3Helper, S3H...
+#include "s3-binary-cache-store.hh"
+#include "nar-info-disk-cache.hh"                       // for getNarInfoDis...
+#include "globals.hh"                                   // for Settings, set...
+#include "compression.hh"                               // for compress, dec...
+#include "config.hh"                                    // for Setting, Base...
+#include "error.hh"                                     // for Error, lvlDebug
+#include "fmt.hh"                                       // for fmt, format
+#include "logging.hh"                                   // for Logger, debug
+#include "path.hh"                                      // for StorePathSet
+#include "ref.hh"                                       // for ref, make_ref
+#include "serialise.hh"                                 // for StreamToSourc...
+#include "types.hh"                                     // for Path, StringMap
+#include "util.hh"                                      // for hasSuffix, chomp
 
 using namespace Aws::Transfer;
 

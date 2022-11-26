@@ -1,16 +1,23 @@
 #pragma once
 
-#include "util.hh"
-#include "path.hh"
-#include "realisation.hh"
+#include <nlohmann/json_fwd.hpp>  // for json
+#include <map>                    // for map
+#include <set>                    // for operator<, set
+#include <string>                 // for string
+#include <string_view>            // for string_view
+#include <type_traits>            // for __strip_reference_wrapper<>::__type
+#include <utility>                // for make_pair, operator<, pair
+#include <variant>                // for variant, variant<>::variant
+#include <vector>                 // for vector
+#include <algorithm>              // for lexicographical_compare
 
-#include <optional>
-
-#include <nlohmann/json_fwd.hpp>
+#include "path.hh"                // for StorePath, StorePathSet
+#include "realisation.hh"         // for RealisedPath, RealisedPath::Set
 
 namespace nix {
 
 class Store;
+template <typename T> class ref;
 
 /**
  * An opaque derived path.

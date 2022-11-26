@@ -1,8 +1,9 @@
 #pragma once
 
-#include <iostream>
-#include <vector>
-#include <cassert>
+#include <stddef.h>     // for size_t
+#include <iostream>     // for ostream
+#include <cassert>      // for assert
+#include <string_view>  // for string_view
 
 namespace nix {
 

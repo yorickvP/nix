@@ -1,10 +1,14 @@
 #pragma once
 
-#include "eval.hh"
+#include <string>       // for string
+#include <string_view>  // for string_view
 
-#include <string>
+#include "error.hh"     // for MakeError
+#include "nixexpr.hh"   // for EvalError
 
 namespace nix {
+class EvalState;
+struct Value;
 
 MakeError(JSONParseError, EvalError);
 

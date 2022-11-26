@@ -1,13 +1,21 @@
+#include <nlohmann/json.hpp>  // for basic_json<>::object_t, basic_json, ite...
+#include <boost/format.hpp>   // for basic_altstringbuf<>::int_type, basic_a...
+#include <initializer_list>   // for initializer_list
+#include <optional>           // for optional
+#include <string>             // for string, operator+, char_traits, basic_s...
+
 #include "registry.hh"
-#include "fetchers.hh"
-#include "util.hh"
-#include "globals.hh"
-#include "store-api.hh"
-#include "local-fs-store.hh"
-
-#include "fetch-settings.hh"
-
-#include <nlohmann/json.hpp>
+#include "fetchers.hh"        // for Input, downloadFile, DownloadFileResult
+#include "util.hh"            // for createDirs, dirOf, getCacheDir, getConf...
+#include "globals.hh"         // for Settings, settings
+#include "store-api.hh"       // for Store
+#include "local-fs-store.hh"  // for LocalFSStore
+#include "fetch-settings.hh"  // for FetchSettings, fetchSettings
+#include "config.hh"          // for Setting
+#include "error.hh"           // for Error
+#include "hash.hh"            // for Hash
+#include "logging.hh"         // for warn, Logger, debug
+#include "ref.hh"             // for ref
 
 namespace nix::fetchers {
 

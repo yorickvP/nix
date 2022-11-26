@@ -1,12 +1,25 @@
 // FIXME: integrate this with nix path-info?
 // FIXME: rename to 'nix store show-derivation' or 'nix debug show-derivation'?
 
-#include "command.hh"
-#include "common-args.hh"
-#include "store-api.hh"
-#include "archive.hh"
-#include "json.hh"
-#include "derivations.hh"
+#include <iostream>            // for operator<<, cout, ostream
+#include <list>                // for operator!=, _List_iterator, _List_iter...
+#include <set>                 // for operator!=, set, _Rb_tree_const_iterator
+#include <string>              // for allocator, basic_string, operator+
+#include <utility>             // for pair, move
+#include <variant>             // for visit
+
+#include "command.hh"          // for registerCommand, InstallablesCommand
+#include "store-api.hh"        // for Store
+#include "json.hh"             // for JSONObject, JSONList
+#include "derivations.hh"      // for Derivation, DerivationOutput, Derivati...
+#include "args.hh"             // for Command::Category
+#include "content-address.hh"  // for makeFileIngestionPrefix, FixedOutputHash
+#include "hash.hh"             // for printHashType, Base16, Hash
+#include "installables.hh"     // for Installable
+#include "path.hh"             // for StorePathSet, StorePath
+#include "ref.hh"              // for ref, nix
+#include "types.hh"            // for StringPairs, Strings
+#include "util.hh"             // for overloaded
 
 using namespace nix;
 

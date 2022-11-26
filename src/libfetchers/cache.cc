@@ -1,9 +1,20 @@
-#include "cache.hh"
-#include "sqlite.hh"
-#include "sync.hh"
-#include "store-api.hh"
+#include <nlohmann/json.hpp>  // for basic_json, json, basic_json<>::object_t
+#include <time.h>             // for time
+#include <initializer_list>   // for initializer_list
+#include <map>                // for map
+#include <memory>             // for allocator, make_shared, shared_ptr
+#include <string>             // for basic_string, string, operator+
+#include <type_traits>        // for remove_reference<>::type
+#include <vector>             // for vector
 
-#include <nlohmann/json.hpp>
+#include "cache.hh"
+#include "sqlite.hh"          // for SQLiteStmt::Use, SQLite, SQLiteStmt
+#include "sync.hh"            // for Sync<>::Lock, Sync
+#include "store-api.hh"       // for Store
+#include "config.hh"          // for Setting
+#include "globals.hh"         // for Settings, settings
+#include "logging.hh"         // for Logger, debug
+#include "util.hh"            // for createDirs, dirOf, getCacheDir
 
 namespace nix::fetchers {
 

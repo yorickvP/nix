@@ -1,13 +1,26 @@
-#include "store-api.hh"
-#include "store-cast.hh"
-#include "gc-store.hh"
-#include "profiles.hh"
-#include "shared.hh"
-#include "globals.hh"
-#include "legacy.hh"
+#include <dirent.h>                // for DT_DIR, DT_LNK, DT_UNKNOWN
+#include <unistd.h>                // for access, R_OK, W_OK
+#include <boost/format.hpp>        // for basic_format, basic_altstringbuf<>...
+#include <boost/lexical_cast.hpp>  // for bad_lexical_cast
+#include <cerrno>                  // for ENOENT
+#include <cstdint>                 // for int64_t
+#include <list>                    // for _List_iterator
+#include <string>                  // for char_traits, allocator, basic_string
+#include <vector>                  // for vector, max
 
-#include <iostream>
-#include <cerrno>
+#include "store-api.hh"            // for openStore
+#include "store-cast.hh"           // for require
+#include "gc-store.hh"             // for GCOptions, GcStore, GCOptions::gcD...
+#include "profiles.hh"             // for deleteGenerationsOlderThan, delete...
+#include "shared.hh"               // for getArg, getIntArg, parseCmdLine
+#include "globals.hh"              // for Settings, settings
+#include "legacy.hh"               // for MainFunction, RegisterLegacyCommand
+#include "error.hh"                // for SysError
+#include "fmt.hh"                  // for format
+#include "logging.hh"              // for Logger, printInfo
+#include "ref.hh"                  // for nix, ref
+#include "types.hh"                // for Strings
+#include "util.hh"                 // for DirEntry, checkInterrupt, getFileType
 
 using namespace nix;
 

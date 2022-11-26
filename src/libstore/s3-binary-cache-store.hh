@@ -1,8 +1,10 @@
 #pragma once
 
-#include "binary-cache-store.hh"
+#include <stdint.h>               // for uint64_t
+#include <atomic>                 // for atomic
 
-#include <atomic>
+#include "binary-cache-store.hh"  // for BinaryCacheStore
+#include "store-api.hh"           // for Store::Params
 
 namespace nix {
 

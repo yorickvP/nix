@@ -1,9 +1,16 @@
+#include <glob.h>                  // for size_t, glob_t, glob, globfree
+#include <nlohmann/json.hpp>       // for basic_json<>::object_t, basic_json
+#include <assert.h>                // for assert
+#include <ctype.h>                 // for isalpha
+#include <sys/stat.h>              // for S_ISDIR, stat
+#include <iterator>                // for next
+
 #include "args.hh"
-#include "hash.hh"
-
-#include <glob.h>
-
-#include <nlohmann/json.hpp>
+#include "hash.hh"                 // for HashType, parseHashType, hashTypes
+#include "libutil/error.hh"        // for UsageError, lvlError
+#include "libutil/logging.hh"      // for verbosity
+#include "libutil/suggestions.hh"  // for Suggestions
+#include "libutil/util.hh"         // for hasPrefix, trim, enumerate, expand...
 
 namespace nix {
 

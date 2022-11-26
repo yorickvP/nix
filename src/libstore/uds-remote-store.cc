@@ -1,14 +1,9 @@
+#include <sys/socket.h>  // for shutdown, SHUT_WR
+#include <chrono>        // for steady_clock, time_point
+
 #include "uds-remote-store.hh"
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <unistd.h>
-
-#include <cstring>
+#include "globals.hh"    // for Settings, settings
+#include "serialise.hh"  // for FdSink, FdSource
 
 
 namespace nix {

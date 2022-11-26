@@ -1,7 +1,20 @@
+#include <nlohmann/json.hpp>  // for basic_json<>::object_t, basic_json<>::c...
+#include <assert.h>           // for assert
+#include <boost/format.hpp>   // for basic_altstringbuf<>::int_type, basic_a...
+#include <exception>          // for current_exception
+#include <functional>         // for function
+#include <future>             // for promise
+#include <memory>             // for shared_ptr, __shared_ptr_access
+#include <optional>           // for optional, nullopt
+#include <type_traits>        // for add_const<>::type
+#include <utility>            // for tuple_element<>::type
+#include <algorithm>          // for equal
+
 #include "realisation.hh"
-#include "store-api.hh"
-#include "closure.hh"
-#include <nlohmann/json.hpp>
+#include "store-api.hh"       // for Store
+#include "closure.hh"         // for computeClosure
+#include "error.hh"           // for Error, MakeError
+#include "logging.hh"         // for warn
 
 namespace nix {
 

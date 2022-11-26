@@ -1,24 +1,40 @@
-#include "archive.hh"
+#include <nlohmann/json.hpp>       // for basic_json<>::object_t, basic_json
+#include <assert.h>                // for assert
+#include <fcntl.h>                 // for open, O_CLOEXEC, O_RDONLY
+#include <stddef.h>                // for size_t
+#include <boost/format.hpp>        // for basic_altstringbuf<>::int_type
+#include <chrono>                  // for milliseconds, duration_cast, opera...
+#include <future>                  // for future, promise
+#include <regex>                   // for regex_match, match_results<>::_Bas...
+#include <fstream>                 // for basic_fstream
+#include <atomic>                  // for __atomic_base, atomic
+#include <exception>               // for current_exception
+#include <initializer_list>        // for initializer_list
+#include <list>                    // for list, operator!=, _List_iterator
+#include <set>                     // for set
+#include <sstream>                 // for basic_stringstream
+#include <type_traits>             // for remove_reference<>::type
+#include <utility>                 // for move
+#include <vector>                  // for vector
+
+#include "archive.hh"              // for dumpPath, dumpString, narVersionMa...
 #include "binary-cache-store.hh"
-#include "compression.hh"
-#include "derivations.hh"
-#include "fs-accessor.hh"
-#include "globals.hh"
-#include "nar-info.hh"
-#include "sync.hh"
-#include "remote-fs-accessor.hh"
-#include "nar-info-disk-cache.hh"
-#include "nar-accessor.hh"
-#include "json.hh"
-#include "thread-pool.hh"
-#include "callback.hh"
-
-#include <chrono>
-#include <future>
-#include <regex>
-#include <fstream>
-
-#include <nlohmann/json.hpp>
+#include "compression.hh"          // for CompressionSink, makeCompressionSink
+#include "fs-accessor.hh"          // for FSAccessor, FSAccessor::Stat, FSAc...
+#include "nar-info.hh"             // for NarInfo
+#include "sync.hh"                 // for Sync, Sync<>::Lock
+#include "remote-fs-accessor.hh"   // for RemoteFSAccessor
+#include "nar-info-disk-cache.hh"  // for NarInfoDiskCache
+#include "nar-accessor.hh"         // for listNar, makeNarAccessor
+#include "json.hh"                 // for JSONObject
+#include "thread-pool.hh"          // for ThreadPool
+#include "callback.hh"             // for Callback
+#include "fmt.hh"                  // for fmt
+#include "logging.hh"              // for Activity, Logger, printMsg, Logger...
+#include "lru-cache.hh"            // for LRUCache
+#include "path-info.hh"            // for ValidPathInfo
+#include "realisation.hh"          // for Realisation, DrvOutput
+#include "serialise.hh"            // for StringSink, TeeSink, FdSink, Lengt...
 
 namespace nix {
 

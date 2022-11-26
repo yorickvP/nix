@@ -1,22 +1,44 @@
 #pragma once
 
-#include <limits>
-#include <string>
+#include <stdint.h>            // for uint64_t
+#include <limits>              // for numeric_limits
+#include <string>              // for string, allocator, basic_string
+#include <atomic>              // for atomic_bool
+#include <chrono>              // for steady_clock, time_point
+#include <exception>           // for exception_ptr
+#include <map>                 // for map
+#include <memory>              // for shared_ptr
+#include <optional>            // for optional
+#include <string_view>         // for string_view
+#include <vector>              // for vector
 
-#include "store-api.hh"
-#include "gc-store.hh"
-#include "log-store.hh"
+#include "store-api.hh"        // for StoreConfig, BuildMode, CheckSigsFlag
+#include "gc-store.hh"         // for GCOptions (ptr only), GCResults (ptr o...
+#include "log-store.hh"        // for LogStore
+#include "config.hh"           // for Setting
+#include "content-address.hh"  // for FileIngestionMethod, FileIngestionMeth...
+#include "hash.hh"             // for htSHA256, HashType
+#include "path-info.hh"        // for ValidPathInfo (ptr only), Substitutabl...
+#include "path.hh"             // for StorePathSet, StorePath, StorePathCAMap
+#include "ref.hh"              // for ref
+#include "repair-flag.hh"      // for RepairFlag, NoRepair
+#include "serialise.hh"        // for Source (ptr only), Sink (ptr only)
+#include "types.hh"            // for Path, StringMap, StringSet
 
 
 namespace nix {
 
 
-class Pipe;
-class Pid;
-struct FdSink;
-struct FdSource;
 template<typename T> class Pool;
 struct ConnectionHandle;
+class FSAccessor;
+struct Activity;
+struct BasicDerivation;
+struct BuildResult;
+struct DerivedPath;
+struct DrvOutput;
+struct Realisation;
+template <typename T> class Callback;
 
 struct RemoteStoreConfig : virtual StoreConfig
 {

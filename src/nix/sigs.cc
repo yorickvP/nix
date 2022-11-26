@@ -1,9 +1,29 @@
-#include "command.hh"
-#include "shared.hh"
-#include "store-api.hh"
-#include "thread-pool.hh"
+#include <assert.h>        // for assert
+#include <unistd.h>        // for size_t, STDIN_FILENO
+#include <atomic>          // for atomic, __atomic_base
+#include <functional>      // for _Bind_helper<>::type, bind
+#include <iostream>        // for cout, ostream
+#include <list>            // for operator!=, _List_iterator, _List_iterator...
+#include <optional>        // for optional
+#include <set>             // for operator!=, _Rb_tree_const_iterator, _Rb_t...
+#include <string>          // for string, basic_string, allocator, operator<<
+#include <utility>         // for pair
+#include <vector>          // for vector
+#include <algorithm>       // for equal
 
-#include <atomic>
+#include "command.hh"      // for registerCommand2, registerCommand, StorePa...
+#include "store-api.hh"    // for Store, openStore, InvalidPath
+#include "thread-pool.hh"  // for ThreadPool
+#include "args.hh"         // for Command, completePath, Command::Category
+#include "crypto.hh"       // for SecretKey, PublicKey
+#include "error.hh"        // for UsageError
+#include "hash.hh"         // for Hash
+#include "logging.hh"      // for Logger, printInfo
+#include "path-info.hh"    // for ValidPathInfo
+#include "path.hh"         // for StorePaths, StorePathSet
+#include "ref.hh"          // for ref, make_ref, nix
+#include "types.hh"        // for StringSet, Strings, Path
+#include "util.hh"         // for checkInterrupt, drainFD, readFile
 
 using namespace nix;
 
@@ -165,6 +185,7 @@ struct CmdKeyGenerateSecret : Command
     {
         return
           #include "key-generate-secret.md"
+
           ;
     }
 
@@ -188,6 +209,7 @@ struct CmdKeyConvertSecretToPublic : Command
     {
         return
           #include "key-convert-secret-to-public.md"
+
           ;
     }
 

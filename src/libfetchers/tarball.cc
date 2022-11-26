@@ -1,12 +1,37 @@
-#include "fetchers.hh"
-#include "cache.hh"
-#include "filetransfer.hh"
-#include "globals.hh"
-#include "store-api.hh"
-#include "archive.hh"
-#include "tarfile.hh"
-#include "types.hh"
-#include "split.hh"
+#include <assert.h>              // for assert
+#include <sys/stat.h>            // for st_mtime, stat
+#include <boost/format.hpp>      // for basic_altstringbuf<>::int_type, basi...
+#include <cstdint>               // for uint64_t
+#include <ctime>                 // for time_t
+#include <map>                   // for operator!=, _Rb_tree_const_iterator
+#include <memory>                // for allocator, make_unique
+#include <optional>              // for optional, operator!=, nullopt
+#include <set>                   // for set
+#include <string>                // for string, basic_string, char_traits
+#include <string_view>           // for string_view, operator==, basic_strin...
+#include <type_traits>           // for remove_reference<>::type
+#include <utility>               // for move, pair
+#include <vector>                // for vector
+
+#include "fetchers.hh"           // for Input, Tree, DownloadFileResult, reg...
+#include "cache.hh"              // for Cache::Result, getCache, Cache
+#include "filetransfer.hh"       // for FileTransferResult, FileTransferError
+#include "store-api.hh"          // for Store, NoCheckSigs
+#include "archive.hh"            // for dumpString
+#include "tarfile.hh"            // for unpackTarfile
+#include "types.hh"              // for OnStartup, Headers, Path
+#include "content-address.hh"    // for ContentAddress, FileIngestionMethod
+#include "error.hh"              // for Error
+#include "hash.hh"               // for hashString, htSHA256, Hash, SRI
+#include "libfetchers/attrs.hh"  // for getStrAttr, Attrs, getIntAttr, maybe...
+#include "logging.hh"            // for warn
+#include "path-info.hh"          // for ValidPathInfo
+#include "path.hh"               // for StorePath
+#include "ref.hh"                // for ref
+#include "repair-flag.hh"        // for NoRepair
+#include "serialise.hh"          // for StringSink, StringSource
+#include "url.hh"                // for ParsedURL, parseUrlScheme, ParsedUrl...
+#include "util.hh"               // for hasSuffix, createTempDir, lstat, rea...
 
 namespace nix::fetchers {
 

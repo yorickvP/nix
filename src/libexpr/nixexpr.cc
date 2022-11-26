@@ -1,10 +1,15 @@
-#include "nixexpr.hh"
-#include "derivations.hh"
-#include "eval.hh"
-#include "symbol-table.hh"
-#include "util.hh"
+#include <boost/format.hpp>  // for basic_altstringbuf<>::int_type, basic_al...
+#include <cstdlib>           // for abort
+#include <optional>          // for optional
+#include <type_traits>       // for enable_if_t
 
-#include <cstdlib>
+#include "nixexpr.hh"
+#include "eval.hh"           // for EvalState
+#include "symbol-table.hh"   // for Symbol, SymbolTable, SymbolStr, operator<<
+#include "util.hh"           // for concatStrings
+#include "ansicolor.hh"      // for ANSI_BOLD, ANSI_NORMAL
+#include "fmt.hh"            // for hintfmt, fmt, format
+#include "suggestions.hh"    // for Suggestion
 
 namespace nix {
 

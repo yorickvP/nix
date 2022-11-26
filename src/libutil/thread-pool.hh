@@ -1,13 +1,20 @@
 #pragma once
 
-#include "sync.hh"
-#include "util.hh"
+#include <assert.h>            // for assert
+#include <stddef.h>            // for size_t
+#include <queue>               // for queue
+#include <functional>          // for function, bind, ref
+#include <thread>              // for thread
+#include <map>                 // for allocator, map
+#include <atomic>              // for atomic_bool
+#include <condition_variable>  // for condition_variable
+#include <exception>           // for exception_ptr
+#include <set>                 // for set
+#include <string>              // for string
+#include <vector>              // for vector
 
-#include <queue>
-#include <functional>
-#include <thread>
-#include <map>
-#include <atomic>
+#include "sync.hh"             // for Sync
+#include "libutil/error.hh"    // for Error, MakeError
 
 namespace nix {
 

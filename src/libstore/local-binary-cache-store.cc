@@ -1,8 +1,23 @@
-#include "binary-cache-store.hh"
-#include "globals.hh"
-#include "nar-info-disk-cache.hh"
+#include <errno.h>                // for ENOENT
+#include <unistd.h>               // for getpid
+#include <boost/format.hpp>       // for basic_altstringbuf<>::int_type, bas...
+#include <atomic>                 // for atomic, __atomic_base
+#include <istream>                // for basic_iostream
+#include <memory>                 // for allocator, shared_ptr
+#include <optional>               // for operator==, optional
+#include <set>                    // for set
+#include <string>                 // for string, operator+, char_traits, bas...
+#include <vector>                 // for vector
 
-#include <atomic>
+#include "binary-cache-store.hh"  // for BinaryCacheStoreConfig, BinaryCache...
+#include "config.hh"              // for Setting
+#include "error.hh"               // for SysError
+#include "fmt.hh"                 // for fmt
+#include "path.hh"                // for StorePathSet
+#include "serialise.hh"           // for StreamToSourceAdapter, Sink (ptr only)
+#include "store-api.hh"           // for StoreConfig, RegisterStoreImplement...
+#include "types.hh"               // for Path, StringMap
+#include "util.hh"                // for createDirs, DirEntry, getEnv, hasSu...
 
 namespace nix {
 

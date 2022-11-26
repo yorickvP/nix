@@ -1,7 +1,13 @@
 #pragma once
 
-#include "serialise.hh"
-#include "store-api.hh"
+#include <functional>  // for function
+
+namespace nix {
+class Store;
+struct FdSink;
+struct FdSource;
+template <typename T> class ref;
+}  // namespace nix
 
 namespace nix::daemon {
 

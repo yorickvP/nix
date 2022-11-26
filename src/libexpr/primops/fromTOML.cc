@@ -1,7 +1,31 @@
-#include "primops.hh"
-#include "eval-inline.hh"
+#include <stddef.h>                // for size_t
+#include <stdint.h>                // for int64_t
+#include <boost/format.hpp>        // for basic_altstringbuf<>::int_type
+#include <exception>               // for exception
+#include <functional>              // for function
+#include <optional>                // for optional
+#include <ostream>                 // for istringstream
+#include <stdexcept>               // for runtime_error
+#include <string>                  // for string, basic_string, allocator
+#include <string_view>             // for basic_string_view
+#include <type_traits>             // for enable_if_t
+#include <unordered_map>           // for operator!=, _Node_iterator, unorde...
+#include <utility>                 // for pair
+#include <vector>                  // for vector
 
-#include "../../toml11/toml.hpp"
+#include "primops.hh"              // for RegisterPrimOp
+#include "eval-inline.hh"          // for EvalState::allocValue
+#include "attr-set.hh"             // for BindingsBuilder
+#include "error.hh"                // for Trace, ErrPos
+#include "eval.hh"                 // for EvalState
+#include "fmt.hh"                  // for hintfmt
+#include "nixexpr.hh"              // for Pos, PosTable, EvalError, PosIdx
+#include "suggestions.hh"          // for Suggestion
+#include "toml11/toml/get.hpp"     // for get
+#include "toml11/toml/parser.hpp"  // for parse
+#include "toml11/toml/types.hpp"   // for value_t, value_t::array, value_t::...
+#include "toml11/toml/value.hpp"   // for value, table, basic_value<>::table...
+#include "value.hh"                // for Value, NixFloat
 
 namespace nix {
 

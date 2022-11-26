@@ -1,5 +1,9 @@
+#include <chrono>      // for nanoseconds, duration_cast, duration, high_res...
+#include <memory>      // for allocator
+
 #include "function-trace.hh"
-#include "logging.hh"
+#include "logging.hh"  // for Logger, printMsg
+#include "error.hh"    // for lvlInfo
 
 namespace nix {
 

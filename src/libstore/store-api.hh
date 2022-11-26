@@ -1,31 +1,42 @@
 #pragma once
 
-#include "nar-info.hh"
-#include "realisation.hh"
-#include "path.hh"
-#include "derived-path.hh"
-#include "hash.hh"
-#include "content-address.hh"
-#include "serialise.hh"
-#include "lru-cache.hh"
-#include "sync.hh"
-#include "globals.hh"
-#include "config.hh"
-#include "path-info.hh"
-#include "repair-flag.hh"
+#include <stdint.h>            // for uint64_t, uint32_t
+#include <sys/types.h>         // for uid_t
+#include <atomic>              // for atomic
+#include <map>                 // for map, map<>::value_compare
+#include <memory>              // for shared_ptr, allocator, unique_ptr, ope...
+#include <string>              // for string, basic_string, operator<
+#include <chrono>              // for steady_clock, time_point
+#include <functional>          // for function
+#include <iosfwd>              // for istream
+#include <list>                // for list
+#include <optional>            // for optional, nullopt
+#include <set>                 // for set
+#include <string_view>         // for string_view
+#include <utility>             // for pair
+#include <vector>              // for vector, max
 
-#include <atomic>
-#include <limits>
-#include <map>
-#include <unordered_map>
-#include <unordered_set>
-#include <memory>
-#include <string>
-#include <chrono>
-#include <variant>
+#include "realisation.hh"      // for Realisation (ptr only), DrvOutput (ptr...
+#include "path.hh"             // for StorePath, StorePathSet, StorePaths
+#include "hash.hh"             // for htSHA256, Hash, HashType, Base32, Base
+#include "content-address.hh"  // for FileIngestionMethod, FileIngestionMeth...
+#include "serialise.hh"        // for Source, Sink (ptr only)
+#include "lru-cache.hh"        // for LRUCache
+#include "sync.hh"             // for Sync, Sync<>::Lock
+#include "globals.hh"          // for Settings, settings
+#include "config.hh"           // for Setting, Config, PathSetting
+#include "path-info.hh"        // for ValidPathInfo, SubstitutablePathInfos
+#include "repair-flag.hh"      // for NoRepair, RepairFlag
+#include "error.hh"            // for Error, MakeError
+#include "logging.hh"          // for Activity (ptr only), Logger, debug
+#include "ref.hh"              // for ref
+#include "types.hh"            // for StringSet, Path, PathSet, StringMap
+#include "util.hh"             // for defaultPathFilter, PathFilter
 
 
 namespace nix {
+struct DerivedPath;
+template <typename T> class Callback;
 
 /**
  * About the class hierarchy of the store implementations:
@@ -67,7 +78,6 @@ struct BasicDerivation;
 struct Derivation;
 class FSAccessor;
 class NarInfoDiskCache;
-class Store;
 class JSONPlaceholder;
 
 

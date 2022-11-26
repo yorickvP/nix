@@ -1,10 +1,16 @@
 #pragma once
 
-#include "fs-accessor.hh"
-#include "ref.hh"
-#include "store-api.hh"
+#include <map>             // for map
+#include <string>          // for string, allocator
+#include <string_view>     // for string_view
+#include <utility>         // for pair
+
+#include "fs-accessor.hh"  // for FSAccessor, FSAccessor::Stat
+#include "ref.hh"          // for ref
+#include "types.hh"        // for Path, StringSet
 
 namespace nix {
+class Store;
 
 class RemoteFSAccessor : public FSAccessor
 {

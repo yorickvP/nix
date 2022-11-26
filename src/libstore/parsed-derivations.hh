@@ -1,11 +1,16 @@
 #pragma once
 
-#include "derivations.hh"
-#include "store-api.hh"
+#include <nlohmann/json_fwd.hpp>  // for json
+#include <memory>                 // for unique_ptr
+#include <optional>               // for optional
+#include <string>                 // for string
 
-#include <nlohmann/json_fwd.hpp>
+#include "path.hh"                // for StorePath, StorePathSet
+#include "types.hh"               // for StringSet, Strings
 
 namespace nix {
+class Store;
+struct BasicDerivation;
 
 class ParsedDerivation
 {

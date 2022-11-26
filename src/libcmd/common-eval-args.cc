@@ -1,13 +1,22 @@
+#include <stddef.h>           // for size_t
+#include <utility>            // for pair
+
 #include "common-eval-args.hh"
-#include "shared.hh"
-#include "filetransfer.hh"
-#include "util.hh"
-#include "eval.hh"
-#include "fetchers.hh"
-#include "registry.hh"
-#include "flake/flakeref.hh"
-#include "store-api.hh"
-#include "command.hh"
+#include "filetransfer.hh"    // for isUri, resolveUri
+#include "util.hh"            // for absPath
+#include "eval.hh"            // for EvalState, EvalSettings, evalSettings
+#include "fetchers.hh"        // for downloadTarball, Tree
+#include "registry.hh"        // for overrideRegistry
+#include "flake/flakeref.hh"  // for parseFlakeRef, FlakeRef
+#include "store-api.hh"       // for openStore, Store
+#include "command.hh"         // for completeFlakeRef
+#include "attr-set.hh"        // for BindingsBuilder, Bindings (ptr only)
+#include "attrs.hh"           // for Attrs
+#include "config.hh"          // for Setting
+#include "eval-inline.hh"     // for EvalState::allocValue
+#include "ref.hh"             // for ref
+#include "symbol-table.hh"    // for SymbolTable
+#include "value.hh"           // for Value
 
 namespace nix {
 

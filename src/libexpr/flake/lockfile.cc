@@ -1,10 +1,28 @@
+#include <nlohmann/json.hpp>  // for basic_json, basic_json<>::object_t, bas...
+#include <cxxabi.h>           // for __forced_unwind
+#include <boost/format.hpp>   // for basic_altstringbuf<>::int_type, basic_a...
+#include <iomanip>            // for operator<<, put_time
+#include <unordered_set>      // for unordered_set
+#include <ctime>              // for gmtime
+#include <functional>         // for function
+#include <initializer_list>   // for initializer_list
+#include <optional>           // for optional
+#include <regex>              // for regex_match, match_results<>::_Base_type
+#include <type_traits>        // for remove_reference<>::type
+#include <unordered_map>      // for unordered_map, _Node_iterator, operator!=
+#include <utility>            // for pair, move
+#include <algorithm>          // for equal
+
 #include "lockfile.hh"
-#include "store-api.hh"
-#include "url-parts.hh"
-
-#include <iomanip>
-
-#include <nlohmann/json.hpp>
+#include "url-parts.hh"       // for flakeIdRegex
+#include "ansicolor.hh"       // for ANSI_NORMAL, ANSI_BOLD, ANSI_GREEN, ANS...
+#include "attrs.hh"           // for attrsToJSON, jsonToAttrs, Attrs
+#include "error.hh"           // for Error, UsageError
+#include "fetchers.hh"        // for Input
+#include "flake/flakeref.hh"  // for FlakeId, FlakeRef
+#include "fmt.hh"             // for fmt
+#include "path.hh"            // for StorePath
+#include "util.hh"            // for get, concatStringsSep, createDirs, dirOf
 
 namespace nix::flake {
 

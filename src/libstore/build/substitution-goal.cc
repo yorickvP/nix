@@ -1,7 +1,21 @@
-#include "worker.hh"
+#include <assert.h>          // for assert
+#include <boost/format.hpp>  // for basic_altstringbuf<>::int_type, basic_al...
+#include <algorithm>         // for max
+#include <exception>         // for current_exception, exception
+#include <future>            // for promise, future
+#include <map>               // for operator!=, _Rb_tree_const_iterator, _Rb...
+#include <thread>            // for thread
+
+#include "worker.hh"         // for Worker
 #include "substitution-goal.hh"
-#include "nar-info.hh"
-#include "finally.hh"
+#include "nar-info.hh"       // for NarInfo
+#include "finally.hh"        // for Finally
+#include "config.hh"         // for Setting
+#include "derived-path.hh"   // for DerivedPath, DerivedPath::Opaque
+#include "fmt.hh"            // for fmt
+#include "globals.hh"        // for Settings, settings, MaxBuildJobsSetting
+#include "logging.hh"        // for Logger, warn, Activity, printError, Logg...
+#include "path-info.hh"      // for ValidPathInfo
 
 namespace nix {
 

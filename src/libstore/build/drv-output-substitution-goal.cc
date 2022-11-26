@@ -1,8 +1,22 @@
+#include <assert.h>          // for assert
+#include <boost/format.hpp>  // for basic_altstringbuf<>::int_type, basic_al...
+#include <exception>         // for current_exception, exception
+#include <map>               // for map, operator!=, _Rb_tree_const_iterator
+#include <type_traits>       // for add_const<>::type
+#include <utility>           // for tuple_element<>::type
+
 #include "drv-output-substitution-goal.hh"
-#include "finally.hh"
-#include "worker.hh"
-#include "substitution-goal.hh"
+#include "finally.hh"        // for Finally
 #include "callback.hh"
+#include "worker.hh"         // for Worker
+#include "config.hh"         // for Setting
+#include "derived-path.hh"   // for DerivedPath, DerivedPath::Opaque
+#include "fmt.hh"            // for fmt
+#include "globals.hh"        // for Settings, settings
+#include "logging.hh"        // for Logger, warn, debug, printError
+#include "path.hh"           // for StorePath, StorePath::dummy
+#include "store-api.hh"      // for Store, getDefaultSubstituters
+#include "substitution-goal.hh" // IWYU pragma: keep
 
 namespace nix {
 

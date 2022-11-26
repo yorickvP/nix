@@ -1,7 +1,12 @@
 #pragma once
 
-#include <variant>
-#include "hash.hh"
+#include <stdint.h>     // for uint8_t
+#include <variant>      // for variant
+#include <optional>     // for optional
+#include <string>       // for string
+#include <string_view>  // for string_view
+
+#include "hash.hh"      // for Hash, HashType
 
 namespace nix {
 

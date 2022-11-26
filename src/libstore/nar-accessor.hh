@@ -1,12 +1,16 @@
 #pragma once
 
-#include <functional>
+#include <stdint.h>    // for uint64_t
+#include <functional>  // for function
+#include <string>      // for string, basic_string
 
-#include "fs-accessor.hh"
+#include "ref.hh"      // for ref
+#include "types.hh"    // for Path
 
 namespace nix {
 
 struct Source;
+class FSAccessor;
 
 /* Return an object that provides access to the contents of a NAR
    file. */

@@ -1,6 +1,12 @@
 #pragma once
 
-#include "util.hh"
+#include <list>         // for list
+#include <string>       // for allocator, string, basic_string
+#include <string_view>  // for string_view
+#include <utility>      // for pair
+
+#include "util.hh"      // for AutoCloseFD
+#include "types.hh"     // for Path, PathSet
 
 namespace nix {
 

@@ -1,12 +1,24 @@
-#include "archive.hh"
-#include "fs-accessor.hh"
-#include "store-api.hh"
+#include <errno.h>           // for errno, ENOENT, ENOTDIR
+#include <stdint.h>          // for uint64_t
+#include <sys/stat.h>        // for stat, S_ISREG, lstat, S_ISLNK, S_ISDIR
+#include <boost/format.hpp>  // for basic_altstringbuf<>::int_type, basic_al...
+#include <memory>            // for dynamic_pointer_cast
+#include <string_view>       // for basic_string_view
+#include <utility>           // for pair
+#include <vector>            // for vector
+
+#include "archive.hh"        // for dumpPath
+#include "fs-accessor.hh"    // for FSAccessor::Type, FSAccessor, FSAccessor...
+#include "store-api.hh"      // for InvalidPath, Store, Store::Params
 #include "local-fs-store.hh"
-#include "globals.hh"
-#include "compression.hh"
-#include "derivations.hh"
+#include "compression.hh"    // for decompress
+#include "error.hh"          // for Error, SysError
+#include "fmt.hh"            // for fmt
+#include "path-info.hh"      // for ValidPathInfo
+#include "util.hh"           // for readFile, pathExists, readDirectory, rea...
 
 namespace nix {
+struct Sink;
 
 LocalFSStore::LocalFSStore(const Params & params)
     : Store(params)

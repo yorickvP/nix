@@ -1,8 +1,26 @@
-#include "flake.hh"
-#include "globals.hh"
-#include "fetch-settings.hh"
+#include <nlohmann/json.hpp>  // for basic_json<>::object_t, basic_json, json
+#include <assert.h>           // for assert
+#include <stdint.h>           // for int64_t
+#include <boost/format.hpp>   // for basic_altstringbuf<>::int_type, basic_a...
+#include <cctype>             // for tolower
+#include <initializer_list>   // for initializer_list
+#include <map>                // for map, map<>::mapped_type, operator!=
+#include <optional>           // for optional
+#include <set>                // for set
+#include <string>             // for string, basic_string, allocator, operator<
+#include <type_traits>        // for remove_reference<>::type
+#include <utility>            // for tuple_element<>::type
+#include <variant>            // for get_if
+#include <vector>             // for vector
 
-#include <nlohmann/json.hpp>
+#include "flake.hh"           // for ConfigFile
+#include "fetch-settings.hh"  // for FetchSettings, fetchSettings
+#include "ansicolor.hh"       // for ANSI_NORMAL, ANSI_RED
+#include "config.hh"          // for Setting, GlobalConfig, globalConfig
+#include "fmt.hh"             // for fmt
+#include "logging.hh"         // for warn, Logger, logger
+#include "types.hh"           // for Path, Explicit
+#include "util.hh"            // for get, concatStringsSep, createDirs, dirOf
 
 namespace nix::flake {
 

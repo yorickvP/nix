@@ -1,5 +1,19 @@
-#include "command.hh"
-#include "run.hh"
+#include <memory>           // for allocator, __shared_ptr_access, shared_ptr
+#include <string>           // for string, operator+, basic_string
+#include <vector>           // for vector
+
+#include "command.hh"       // for registerCommand, SourceExprCommand, catSe...
+#include "run.hh"           // for runProgramInStore
+#include "args.hh"          // for Command::Category
+#include "config.hh"        // for Setting
+#include "globals.hh"       // for Settings, settings
+#include "installables.hh"  // for App, Installable, UnresolvedApp
+#include "ref.hh"           // for ref, nix
+#include "types.hh"         // for Strings
+
+namespace nix {
+class Store;
+}  // namespace nix
 
 using namespace nix;
 

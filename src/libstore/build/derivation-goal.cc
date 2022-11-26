@@ -1,54 +1,40 @@
+#include <fcntl.h>                   // for open, O_CLOEXEC, O_CREAT, O_TRUNC
+#include <unistd.h>                  // for geteuid, getpid
+#include <assert.h>                  // for assert
+#include <errno.h>                   // for EPIPE
+#include <stdlib.h>                  // for random, WEXITSTATUS, WIFEXITED
+#include <sys/stat.h>                // for stat, chmod, S_IWUSR, uid_t, S_I...
+#include <syscall.h>                 // for SYS_pivot_root
+#include <time.h>                    // for time
+#include <boost/format.hpp>          // for basic_altstringbuf<>::int_type
+#include <fstream>                   // for basic_ostream, fstream, operator<<
+#include <set>                       // for set
+#include <stdexcept>                 // for out_of_range
+#include <type_traits>               // for remove_reference<>::type
+#include <variant>                   // for get_if, visit
+
 #include "derivation-goal.hh"
-#include "hook-instance.hh"
-#include "worker.hh"
-#include "builtins.hh"
-#include "builtins/buildenv.hh"
-#include "references.hh"
-#include "finally.hh"
-#include "util.hh"
-#include "archive.hh"
-#include "json.hh"
-#include "compression.hh"
-#include "worker-protocol.hh"
-#include "topo-sort.hh"
-#include "callback.hh"
-#include "local-store.hh" // TODO remove, along with remaining downcasts
-
-#include <regex>
-#include <queue>
-
-#include <fstream>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <sys/wait.h>
-#include <netdb.h>
-#include <fcntl.h>
-#include <termios.h>
-#include <unistd.h>
-#include <sys/mman.h>
-#include <sys/utsname.h>
-#include <sys/resource.h>
-
-#if HAVE_STATVFS
-#include <sys/statvfs.h>
-#endif
+#include "hook-instance.hh"          // for HookInstance
+#include "worker.hh"                 // for Worker, upcast_goal
+#include "finally.hh"                // for Finally
+#include "util.hh"                   // for MaintainCount, AutoCloseFD, get
+#include "compression.hh"            // for makeCompressionSink, Compression...
+#include "worker-protocol.hh"        // for write
+#include "local-store.hh"            // for LocalStore
+#include "ansicolor.hh"              // for ANSI_BOLD, ANSI_NORMAL
+#include "config.hh"                 // for Setting, PathSetting, operator<<
+#include "derived-path.hh"           // for DerivedPath, DerivedPath::Built
+#include "experimental-features.hh"  // for Xp
+#include "fmt.hh"                    // for fmt, yellowtxt, format, normaltxt
+#include "globals.hh"                // for Settings, settings, MaxBuildJobs...
+#include "local-fs-store.hh"         // for LocalFSStore, LocalFSStore::drvs...
+#include "parsed-derivations.hh"     // for ParsedDerivation
+#include "ref.hh"                    // for ref
+#include "repair-flag.hh"            // for Repair, NoRepair
+#include "serialise.hh"              // for FdSink, operator<<, Sink, Buffer...
 
 /* Includes required for chroot support. */
 #if __linux__
-#include <sys/socket.h>
-#include <sys/ioctl.h>
-#include <net/if.h>
-#include <netinet/ip.h>
-#include <sys/personality.h>
-#include <sys/mman.h>
-#include <sched.h>
-#include <sys/param.h>
-#include <sys/mount.h>
-#include <sys/syscall.h>
-#if HAVE_SECCOMP
-#include <seccomp.h>
-#endif
 #define pivot_root(new_root, put_old) (syscall(SYS_pivot_root, new_root, put_old))
 #endif
 
@@ -57,10 +43,7 @@
 #include <sys/sysctl.h>
 #endif
 
-#include <pwd.h>
-#include <grp.h>
-
-#include <nlohmann/json.hpp>
+#include <nlohmann/json.hpp>         // for basic_json<>::object_t, basic_json
 
 namespace nix {
 

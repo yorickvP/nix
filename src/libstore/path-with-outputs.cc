@@ -1,8 +1,12 @@
-#include "path-with-outputs.hh"
-#include "store-api.hh"
-#include "nlohmann/json.hpp"
+#include <assert.h>               // for assert
+#include <stddef.h>               // for size_t
+#include <nlohmann/json_fwd.hpp>  // for json
+#include <regex>                  // for match_results, regex_match, match_r...
 
-#include <regex>
+#include "path-with-outputs.hh"
+#include "store-api.hh"           // for Store
+#include "nlohmann/json.hpp"      // for basic_json, basic_json<>::object_t
+#include "util.hh"                // for concatStringsSep, tokenizeString
 
 namespace nix {
 

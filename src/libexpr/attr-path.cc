@@ -1,6 +1,21 @@
+#include <boost/lexical_cast.hpp>  // for bad_lexical_cast
+#include <cstdint>                 // for uint32_t
+#include <list>                    // for operator!=, _List_iterator, _List_...
+#include <optional>                // for optional
+#include <set>                     // for set
+#include <stdexcept>               // for invalid_argument
+#include <type_traits>             // for remove_reference<>::type
+
 #include "attr-path.hh"
-#include "eval-inline.hh"
-#include "util.hh"
+#include "eval-inline.hh"          // for EvalState::allocValue, EvalState::...
+#include "util.hh"                 // for string2Int
+#include "attr-set.hh"             // for Bindings, Attr, Bindings::iterator
+#include "eval.hh"                 // for EvalState, showType
+#include "nixexpr.hh"              // for PosIdx, ParseError, noPos, TypeError
+#include "suggestions.hh"          // for Suggestions
+#include "symbol-table.hh"         // for Symbol, SymbolTable, SymbolStr
+#include "types.hh"                // for Strings
+#include "value.hh"                // for Value, Value::(anonymous), nAttrs
 
 
 namespace nix {

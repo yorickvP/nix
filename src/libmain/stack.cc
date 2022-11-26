@@ -1,12 +1,16 @@
-#include "error.hh"
-#include "shared.hh"
+#include <unistd.h>          // for _exit, write
+#include <signal.h>          // for sigaction, sigfillset, stack_t, siginfo_t
+#include <ucontext.h>        // for REG_RSP, ucontext_t, greg_t, mcontext_t
+#include <boost/format.hpp>  // for basic_altstringbuf<>::int_type, basic_al...
+#include <cstring>           // for strlen
+#include <cstddef>           // for ptrdiff_t
+#include <cstdlib>           // for abort
+#include <functional>        // for function
+#include <memory>            // for allocator, make_unique, unique_ptr
+#include <vector>            // for vector
 
-#include <cstring>
-#include <cstddef>
-#include <cstdlib>
-
-#include <unistd.h>
-#include <signal.h>
+#include "error.hh"          // for SysError, Error
+#include "shared.hh"         // for defaultStackOverflowHandler, detectStack...
 
 namespace nix {
 

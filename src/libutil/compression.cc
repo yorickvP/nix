@@ -1,18 +1,20 @@
+#include <archive.h>             // for archive_write_set_filter_option, arc...
+#include <archive_entry.h>       // for archive_entry_free, archive_entry_new
+#include <brotli/decode.h>       // for BrotliDecoderCreateInstance, BrotliD...
+#include <brotli/encode.h>       // for BrotliEncoderCompressStream, BrotliE...
+#include <stdint.h>              // for uint8_t
+#include <boost/format.hpp>      // for basic_altstringbuf<>::int_type, basi...
+#include <cstdio>                // for size_t, ssize_t, BUFSIZ
+#include <algorithm>             // for find, min
+#include <utility>               // for move
+#include <vector>                // for vector
+
 #include "compression.hh"
-#include "tarfile.hh"
-#include "util.hh"
-#include "finally.hh"
-#include "logging.hh"
-
-#include <archive.h>
-#include <archive_entry.h>
-#include <cstdio>
-#include <cstring>
-
-#include <brotli/decode.h>
-#include <brotli/encode.h>
-
-#include <iostream>
+#include "tarfile.hh"            // for TarArchive
+#include "util.hh"               // for checkInterrupt, EndOfFile
+#include "logging.hh"            // for warn
+#include "libutil/ref.hh"        // for make_ref, ref
+#include "libutil/serialise.hh"  // for StringSink, FinishSink, Sink, source...
 
 namespace nix {
 

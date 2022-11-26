@@ -1,9 +1,18 @@
 #pragma once
 
-#include "types.hh"
-#include "fetchers.hh"
+#include <map>                   // for map
+#include <memory>                // for shared_ptr
+#include <utility>               // for pair
+#include <vector>                // for max, vector
 
-namespace nix { class Store; }
+#include "types.hh"              // for Path
+#include "fetchers.hh"           // for Input
+#include "libfetchers/attrs.hh"  // for Attrs
+
+namespace nix {
+class Store;
+template <typename T> class ref;
+}  // namespace nix
 
 namespace nix::fetchers {
 

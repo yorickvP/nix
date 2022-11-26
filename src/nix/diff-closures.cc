@@ -1,10 +1,26 @@
-#include "command.hh"
-#include "shared.hh"
-#include "store-api.hh"
-#include "common-args.hh"
-#include "names.hh"
+#include <stdint.h>          // for int64_t, uint64_t
+#include <boost/format.hpp>  // for basic_altstringbuf<>::int_type, basic_al...
+#include <regex>             // for regex_match, match_results, match_result...
+#include <iostream>          // for cout, ostream
+#include <map>               // for map, operator!=, _Rb_tree_const_iterator
+#include <set>               // for set
+#include <string>            // for string, basic_string, allocator, operator<
+#include <string_view>       // for string_view
+#include <type_traits>       // for add_const<>::type
+#include <utility>           // for tuple_element<>::type
+#include <vector>            // for vector
+#include <cmath>             // for abs
 
-#include <regex>
+#include "command.hh"        // for registerCommand2, SourceExprCommand, pri...
+#include "store-api.hh"      // for Store
+#include "names.hh"          // for DrvName
+#include "ansicolor.hh"      // for ANSI_GREEN, ANSI_NORMAL, ANSI_RED
+#include "fmt.hh"            // for fmt
+#include "installables.hh"   // for Installable, Realise, Realise::Outputs
+#include "path-info.hh"      // for ValidPathInfo
+#include "path.hh"           // for StorePath, StorePathSet
+#include "ref.hh"            // for ref, nix
+#include "util.hh"           // for concatStringsSep
 
 namespace nix {
 
@@ -125,6 +141,7 @@ struct CmdDiffClosures : SourceExprCommand
     {
         return
           #include "diff-closures.md"
+
           ;
     }
 

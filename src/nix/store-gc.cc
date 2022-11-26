@@ -1,9 +1,17 @@
-#include "command.hh"
-#include "common-args.hh"
-#include "shared.hh"
-#include "store-api.hh"
-#include "store-cast.hh"
-#include "gc-store.hh"
+#include <boost/lexical_cast.hpp>  // for bad_lexical_cast
+#include <cstdint>                 // for uint64_t
+#include <string>                  // for string, basic_string, allocator
+
+#include "command.hh"              // for registerCommand2, StoreCommand
+#include "common-args.hh"          // for MixDryRun
+#include "shared.hh"               // for PrintFreed
+#include "store-cast.hh"           // for require
+#include "gc-store.hh"             // for GCOptions, GcStore, GCOptions::gcD...
+#include "ref.hh"                  // for ref, nix
+
+namespace nix {
+class Store;
+}  // namespace nix
 
 using namespace nix;
 
@@ -30,6 +38,7 @@ struct CmdStoreGC : StoreCommand, MixDryRun
     {
         return
           #include "store-gc.md"
+
           ;
     }
 

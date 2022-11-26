@@ -1,12 +1,35 @@
-#include "command.hh"
-#include "common-args.hh"
-#include "shared.hh"
-#include "store-api.hh"
-#include "eval.hh"
-#include "eval-inline.hh"
-#include "json.hh"
-#include "value-to-json.hh"
-#include "progress-bar.hh"
+#include <sys/stat.h>        // for mkdir
+#include <boost/format.hpp>  // for basic_altstringbuf<>::int_type, basic_al...
+#include <functional>        // for function
+#include <iostream>          // for cout, endl, ostream
+#include <memory>            // for allocator, __shared_ptr_access, shared_ptr
+#include <optional>          // for optional
+#include <string>            // for string, char_traits, basic_string
+#include <string_view>       // for operator==, operator<<, basic_string_view
+
+#include "command.hh"        // for registerCommand, InstallableCommand, cat...
+#include "common-args.hh"    // for MixJSON
+#include "eval.hh"           // for EvalState, printValue
+#include "eval-inline.hh"    // for EvalState::allocValue, EvalState::forceV...
+#include "json.hh"           // for JSONPlaceholder
+#include "value-to-json.hh"  // for printValueAsJSON
+#include "progress-bar.hh"   // for stopProgressBar
+#include "args.hh"           // for Command::Category
+#include "attr-set.hh"       // for Attr, Bindings
+#include "error.hh"          // for Error, ErrPos, UsageError, SysError
+#include "fmt.hh"            // for hintfmt
+#include "installables.hh"   // for Installable
+#include "logging.hh"        // for Logger, logger
+#include "nixexpr.hh"        // for Pos, PosTable, noPos, PosIdx, TypeError
+#include "ref.hh"            // for ref, nix
+#include "symbol-table.hh"   // for SymbolStr, SymbolTable
+#include "types.hh"          // for Path, BackedStringView, PathSet
+#include "util.hh"           // for absPath, concatStrings, pathExists, writ...
+#include "value.hh"          // for Value, Value::(anonymous), Value::(anony...
+
+namespace nix {
+class Store;
+}  // namespace nix
 
 using namespace nix;
 
@@ -48,6 +71,7 @@ struct CmdEval : MixJSON, InstallableCommand
     {
         return
           #include "eval.md"
+
           ;
     }
 

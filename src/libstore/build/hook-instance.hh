@@ -1,7 +1,10 @@
 #pragma once
 
-#include "logging.hh"
-#include "serialise.hh"
+#include <map>           // for map
+
+#include "logging.hh"    // for ActivityId, Activity
+#include "serialise.hh"  // for FdSink
+#include "util.hh"       // for Pipe, Pid
 
 namespace nix {
 

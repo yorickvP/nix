@@ -1,14 +1,21 @@
 #pragma once
 
-#include "types.hh"
-#include "config.hh"
-#include "util.hh"
-#include "experimental-features.hh"
+#include <sys/types.h>               // for size_t, time_t, off_t
+#include <stdint.h>                  // for uint64_t
+#include <boost/format.hpp>          // for basic_altstringbuf<>::int_type
+#include <map>                       // for map
+#include <limits>                    // for numeric_limits
+#include <list>                      // for operator!=
+#include <optional>                  // for optional
+#include <set>                       // for set
+#include <string>                    // for string, allocator, basic_string
+#include <vector>                    // for vector
 
-#include <map>
-#include <limits>
-
-#include <sys/types.h>
+#include "types.hh"                  // for Path, Strings, Paths, StringSet
+#include "config.hh"                 // for Setting, BaseSetting, Config
+#include "util.hh"                   // for getEnv
+#include "experimental-features.hh"  // for ExperimentalFeature
+#include "fmt.hh"                    // for fmt
 
 namespace nix {
 

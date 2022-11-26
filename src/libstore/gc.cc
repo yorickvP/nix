@@ -1,25 +1,53 @@
-#include "derivations.hh"
-#include "globals.hh"
-#include "local-store.hh"
-#include "local-fs-store.hh"
-#include "finally.hh"
+#include <errno.h>             // for errno, ENOENT, EACCES, ESRCH, ECONNREF...
+#include <fcntl.h>             // for fcntl, open, F_GETFL, F_SETFL, O_NONBLOCK
+#include <poll.h>              // for pollfd, POLLIN, poll
+#include <sys/socket.h>        // for accept, shutdown, SHUT_RDWR, ssize_t
+#include <sys/stat.h>          // for stat, fstat, S_ISLNK
+#include <sys/statvfs.h>       // for statvfs
+#include <unistd.h>            // for unlink, getpid, readlink
+#include <assert.h>            // for assert
+#include <dirent.h>            // for opendir, readdir, dirent, DT_UNKNOWN
+#include <stdint.h>            // for uint64_t, int64_t
+#include <stdlib.h>            // for abort, random
+#include <boost/format.hpp>    // for basic_altstringbuf<>::int_type, basic_...
+#include <queue>               // for queue, queue<>::value_type
+#include <regex>               // for regex, match_results<>::_Base_type
+#include <climits>             // for SSIZE_MAX
+#include <chrono>              // for duration, time_point, operator+, opera...
+#include <condition_variable>  // for condition_variable
+#include <future>              // for promise, shared_future, future
+#include <map>                 // for map, operator!=, _Rb_tree_const_iterator
+#include <memory>              // for allocator, unique_ptr, allocator_trait...
+#include <optional>            // for optional, operator==
+#include <set>                 // for set
+#include <sstream>             // for basic_stringbuf<>::int_type, basic_str...
+#include <string>              // for string, basic_string, operator+, char_...
+#include <string_view>         // for string_view, operator==
+#include <thread>              // for thread
+#include <type_traits>         // for remove_reference<>::type, remove_refer...
+#include <unordered_map>       // for _Node_iterator, _Map_base<>::mapped_type
+#include <unordered_set>       // for unordered_set
+#include <utility>             // for move, pair, tuple_element<>::type
+#include <vector>              // for vector
 
-#include <functional>
-#include <queue>
-#include <algorithm>
-#include <regex>
-#include <random>
-
-#include <climits>
-#include <errno.h>
-#include <fcntl.h>
-#include <poll.h>
-#include <sys/socket.h>
-#include <sys/stat.h>
-#include <sys/statvfs.h>
-#include <sys/types.h>
-#include <sys/un.h>
-#include <unistd.h>
+#include "globals.hh"          // for Settings, settings
+#include "local-store.hh"      // for LocalStore, LocalStore::State
+#include "local-fs-store.hh"   // for LocalFSStore
+#include "finally.hh"          // for Finally
+#include "config.hh"           // for Setting, PathSetting, operator<<
+#include "error.hh"            // for SysError, Error, lvlTalkative
+#include "fmt.hh"              // for fmt, format
+#include "gc-store.hh"         // for GCOptions, Roots, GCResults, GCOptions...
+#include "hash.hh"             // for hashString, Base32, Hash, htSHA1
+#include "logging.hh"          // for Logger, debug, printInfo, printError
+#include "path-info.hh"        // for ValidPathInfo
+#include "path.hh"             // for StorePath, StorePathSet, StorePaths
+#include "pathlocks.hh"        // for lockFile, ltWrite, FdLock, openLockFile
+#include "ref.hh"              // for ref
+#include "store-api.hh"        // for BadStorePath, InvalidPath
+#include "sync.hh"             // for Sync<>::Lock, Sync
+#include "types.hh"            // for Path, PathSet, PathView, Paths
+#include "util.hh"             // for AutoCloseFD, readFile, writeFull, chec...
 
 namespace nix {
 

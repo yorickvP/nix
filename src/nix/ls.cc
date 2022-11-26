@@ -1,9 +1,23 @@
-#include "command.hh"
-#include "store-api.hh"
-#include "fs-accessor.hh"
-#include "nar-accessor.hh"
-#include "common-args.hh"
-#include "json.hh"
+#include <boost/format.hpp>  // for basic_altstringbuf<>::int_type, basic_al...
+#include <functional>        // for function
+#include <iostream>          // for cout
+#include <set>               // for operator!=, set, _Rb_tree_const_iterator
+#include <string>            // for string, allocator, basic_string, operator+
+#include <string_view>       // for string_view
+
+#include "command.hh"        // for registerCommand2, StoreCommand
+#include "store-api.hh"      // for Store
+#include "fs-accessor.hh"    // for FSAccessor, FSAccessor::Stat, FSAccessor...
+#include "nar-accessor.hh"   // for listNar, makeNarAccessor
+#include "common-args.hh"    // for MixJSON
+#include "json.hh"           // for JSONPlaceholder
+#include "args.hh"           // for completePath, Args, Command
+#include "error.hh"          // for UsageError, Error
+#include "fmt.hh"            // for fmt
+#include "logging.hh"        // for Logger, logger
+#include "ref.hh"            // for ref, nix
+#include "types.hh"          // for Path
+#include "util.hh"           // for baseNameOf, readFile
 
 using namespace nix;
 
@@ -120,6 +134,7 @@ struct CmdLsStore : StoreCommand, MixLs
     {
         return
           #include "store-ls.md"
+
           ;
     }
 
@@ -147,6 +162,7 @@ struct CmdLsNar : Command, MixLs
     {
         return
           #include "nar-ls.md"
+
           ;
     }
 

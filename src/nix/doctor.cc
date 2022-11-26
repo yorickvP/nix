@@ -1,13 +1,28 @@
-#include <sstream>
+#include <boost/format.hpp>    // for basic_altstringbuf<>::int_type, basic_...
+#include <sstream>             // for operator<<, basic_ostream, stringstream
+#include <list>                // for list, operator!=, _List_iterator, _Lis...
+#include <map>                 // for operator!=, _Rb_tree_const_iterator
+#include <memory>              // for allocator, shared_ptr
+#include <optional>            // for optional
+#include <string>              // for string, char_traits, basic_string, ope...
 
-#include "command.hh"
-#include "logging.hh"
-#include "serve-protocol.hh"
-#include "shared.hh"
-#include "store-api.hh"
-#include "local-fs-store.hh"
-#include "util.hh"
-#include "worker-protocol.hh"
+#include "command.hh"          // for registerCommand, StoreCommand, catNixI...
+#include "logging.hh"          // for Logger, notice, logger
+#include "serve-protocol.hh"   // for SERVE_PROTOCOL_VERSION
+#include "shared.hh"           // for Exit
+#include "store-api.hh"        // for Store
+#include "util.hh"             // for dirOf, canonPath, getEnv, tokenizeString
+#include "worker-protocol.hh"  // for GET_PROTOCOL_MAJOR, GET_PROTOCOL_MINOR
+#include "ansicolor.hh"        // for ANSI_NORMAL, ANSI_GREEN, ANSI_RED
+#include "args.hh"             // for Command::Category
+#include "error.hh"            // for SysError
+#include "fmt.hh"              // for format
+#include "globals.hh"          // for Settings, settings
+#include "ref.hh"              // for ref, nix
+#include "types.hh"            // for Path, PathSet, Strings, PathView
+#include "local-fs-store.hh"   // for LocalFSStore
+
+// IWYU pragma: no_forward_declare nix::LocalFSStore
 
 using namespace nix;
 

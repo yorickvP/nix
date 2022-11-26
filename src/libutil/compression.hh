@@ -1,10 +1,12 @@
 #pragma once
 
-#include "ref.hh"
-#include "types.hh"
-#include "serialise.hh"
+#include <string>            // for string, basic_string
+#include <memory>            // for unique_ptr
+#include <string_view>       // for string_view
 
-#include <string>
+#include "ref.hh"            // for ref
+#include "serialise.hh"      // for BufferedSink, FinishSink
+#include "libutil/error.hh"  // for Error, MakeError
 
 namespace nix {
 

@@ -1,10 +1,18 @@
 #pragma once
 
-#include "ref.hh"
-#include "nar-info.hh"
-#include "realisation.hh"
+#include <memory>    // for shared_ptr
+#include <optional>  // for optional
+#include <string>    // for string
+#include <utility>   // for pair
+
+#include "ref.hh"    // for ref
+#include "types.hh"  // for Path
 
 namespace nix {
+struct DrvOutput;
+struct NarInfo;
+struct Realisation;
+struct ValidPathInfo;
 
 class NarInfoDiskCache
 {
