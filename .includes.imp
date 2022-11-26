@@ -1,0 +1,27 @@
+[
+  { include: ["<bits/struct_stat.h>", "private", "<sys/stat.h>", "public"] },
+  { include: ["<bits/types/sig_atomic_t.h>", "private", "<signal.h>", "public"] },
+  { include: ["<bits/types/siginfo_t.h>", "private", "<signal.h>", "public"] },
+  { include: ["<bits/types/stack_t.h>", "private", "<signal.h>", "public"] },
+  { include: ["<bits/types/struct_tm.h>", "private", "<time.h>", "public"] },
+  { include: ["<bits/types/struct_rusage.h>", "private", "<sys/resource.h>", "public"] },
+  { include: ["<bits/std_abs.h>", "private", "<cmath>", "public"] },
+  { include: ["<ext/alloc_traits.h>", "private", "<memory>", "public"] },
+  { include: ["<bits/std_abs.h>", "private", "<cstdlib>", "public"] },
+  { include: ["@<boost/format/.*>", "private", "<boost/format.hpp>", "public"] },
+  { include: ["@<boost/lexical_cast/.*>", "private", "<boost/lexical_cast.hpp>", "public"] },
+	{ include: ["<boost/detail/basic_pointerbuf.hpp>", "private", "<boost/lexical_cast.hpp>", "public"], },
+  { include: ["@<nlohmann/detail/.*>", "private", "<nlohmann/json.hpp>", "public"] },
+  { include: ["<boost/cstdint.hpp>", "private", "<stdint.h>", "public"] },
+  { symbol: ["nlohmann::json", "private", "<nlohmann/json_fwd.hpp>", "public" ] },
+  { symbol: ["nlohmann::json", "private", "<nlohmann/json.hpp>", "public" ] },
+  # workaround: https://github.com/include-what-you-use/include-what-you-use/issues/908
+  # the symbol is OK from either header
+  { symbol: ["std::max", "private", "<vector>", "public" ] },
+  { symbol: ["std::max", "private", "<algorithm>", "public" ] },
+  { symbol: ["termios", "private", "<termios.h>", "public" ]},
+  { symbol: ["termios", "private", "<unistd.h>", "public" ]},
+  { include: ["@<bits/termios-.*.h>", "private", "<termios.h>", "public" ]},
+  { include: ["@<gtest/gtest_.*>", "private", "<gtest/gtest.h>", "public" ]},
+  { include: ["@<gtest/gtest-.*>", "private", "<gtest/gtest.h>", "public" ]},
+]

@@ -564,6 +564,15 @@
       packages = forAllSystems (system: rec {
         inherit (nixpkgsFor.${system}) nix;
         default = nix;
+        iwyu-wrapped = nixpkgsFor.${system}.include-what-you-use.overrideAttrs (o: {
+          unwrapped = "${nixpkgsFor.${system}.include-what-you-use}";
+          clang = nixpkgsFor.${system}.llvmPackages_14.clang;
+          postInstall = ''
+            ${o.postInstall}
+            substituteAll ${nixpkgs}/pkgs/development/tools/clang-tools/wrapper $out/bin/include-what-you-use
+            chmod +x $_
+          '';
+        });
       } // (nixpkgs.lib.optionalAttrs (builtins.elem system linux64BitSystems) {
         nix-static = let
           nixpkgs = nixpkgsFor.${system}.pkgsStatic;
@@ -687,7 +696,7 @@
 
             outputs = [ "out" "dev" "doc" ];
 
-            nativeBuildInputs = nativeBuildDeps ++ [ clang-tools bear ];
+            nativeBuildInputs = nativeBuildDeps ++ [ clang-tools bear self.packages.${system}.iwyu-wrapped ];
             buildInputs = buildDeps ++ propagatedDeps ++ awsDeps;
 
             inherit configureFlags;
