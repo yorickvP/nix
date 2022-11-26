@@ -25,6 +25,7 @@
 #include "libutil/fmt.hh"                                     // for hintformat
 #include "libutil/suggestions.hh"                             // for Suggestion
 #include "libutil/types.hh"                                   // for Strings
+#include "libutil/error.hh"                                   // for Trace
 
 
 namespace nix {

@@ -16,7 +16,7 @@
 
 #include "types.hh"          // for StringSet, Strings
 #include "util.hh"           // for EndOfFile, ignoreException
-#include "libutil/error.hh"  // for Error, MakeError
+#include "error.hh"          // for Error, MakeError
 
 namespace boost::context {
 struct stack_context;

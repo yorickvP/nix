@@ -14,6 +14,7 @@
 #include "util.hh"
 #include "crypto.hh"
 
+#include <boost/format.hpp>
 #include <sodium.h>
 #include <nlohmann/json.hpp>
 

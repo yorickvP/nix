@@ -1,13 +1,14 @@
 #pragma once
 
-#include <set>                     // for set
-#include <iosfwd>                  // for ostream
-#include <string>                  // for string
-#include <string_view>             // for string_view
-#include <variant>                 // for get_if, holds_alternative, variant
+#include <set>            // for set
+#include <iosfwd>         // for ostream
+#include <string>         // for string
+#include <string_view>    // for string_view
+#include <variant>        // for get_if, holds_alternative, variant
 
-#include "comparator.hh"           // for GENERATE_CMP
-#include "libutil/suggestions.hh"  // for me
+#include "comparator.hh"  // for GENERATE_CMP
+// iwyu is comfused by GENERATE_CMP and wants to include this file
+// IWYU pragma: no_include "libutil/suggestions.hh"
 
 namespace nix {
 
@@ -22,7 +23,6 @@ public:
     std::string suggestion;
 
     std::string to_string() const;
-
     GENERATE_CMP(Suggestion, me->distance, me->suggestion)
 };
 

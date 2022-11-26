@@ -2,20 +2,20 @@
 #include <stdlib.h>              // for abort
 #include <unistd.h>              // for getpid, STDERR_FILENO
 #include <atomic>                // for atomic, __atomic_base
-#include <iostream>              // for cout
+#include <iostream>              // for operator<<, ostringstream, stringstream
 #include <exception>             // for exception
 #include <initializer_list>      // for initializer_list
 #include <list>                  // for _List_const_iterator, operator==, list
 #include <memory>                // for allocator_traits<>::value_type
 #include <tuple>                 // for forward_as_tuple
 #include <utility>               // for pair, piecewise_construct
-#include <ostream>               // for operator<<, ostringstream, stringstream
 
 #include "logging.hh"
 #include "util.hh"               // for filterANSIEscapes, getEnv, hasPrefix
 #include "config.hh"             // for Setting, GlobalConfig, GlobalConfig:...
 #include "libutil/ansicolor.hh"  // for ANSI_NORMAL, ANSI_WARNING
 #include "libutil/error.hh"      // for ErrorInfo, ErrPos, Verbosity, Trace
+#include "libutil/fmt.hh"        // for FormatOrString, hintformat
 
 namespace nix {
 

@@ -10,7 +10,7 @@
 #include <vector>                 // for max, vector
 
 #include "types.hh"               // for Path, StringMap
-#include "libutil/fmt.hh"         // for fmt
+#include "fmt.hh"                 // for fmt
 
 #pragma once
 
