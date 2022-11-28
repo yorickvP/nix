@@ -9,8 +9,8 @@
 #include "archive.hh"          // for dumpPath
 #include "split.hh"            // for splitPrefixTo
 #include "util.hh"             // for base64Decode, base64Encode, readFile
-#include "libutil/logging.hh"  // for warn
-#include "libutil/types.hh"    // for Path
+#include "logging.hh"  // for warn
+#include "types.hh"    // for Path
 
 namespace nix {
 

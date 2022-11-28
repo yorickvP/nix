@@ -3,7 +3,7 @@
 #include <optional>              // for optional
 #include <utility>               // for pair
 
-#include "libfetchers/attrs.hh"  // for Attrs
+#include "attrs.hh"  // for Attrs
 #include "path.hh"               // for StorePath
 #include "ref.hh"                // for ref
 

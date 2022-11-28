@@ -15,7 +15,7 @@
 #include "archive.hh"              // for dumpPathAndGetMtime
 #include "error.hh"                // for Error, lvlTalkative
 #include "fmt.hh"                  // for fmt
-#include "libfetchers/attrs.hh"    // for getStrAttr, Attrs, attrsToQuery
+#include "attrs.hh"    // for getStrAttr, Attrs, attrsToQuery
 #include "logging.hh"              // for Activity, actUnknown, logger
 #include "path.hh"                 // for StorePath
 #include "ref.hh"                  // for ref

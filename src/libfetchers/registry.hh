@@ -7,7 +7,7 @@
 
 #include "types.hh"              // for Path
 #include "fetchers.hh"           // for Input
-#include "libfetchers/attrs.hh"  // for Attrs
+#include "attrs.hh"              // for Attrs
 
 namespace nix {
 class Store;

@@ -7,7 +7,7 @@
 
 #include "types.hh"         // for Path
 #include "serialise.hh"     // for Sink
-#include "libutil/util.hh"  // for defaultPathFilter, PathFilter
+#include "util.hh"          // for defaultPathFilter, PathFilter
 
 
 namespace nix {

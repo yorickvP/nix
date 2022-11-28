@@ -23,7 +23,7 @@
 #include "error.hh"              // for Error, lvlTalkative
 #include "fmt.hh"                // for fmt
 #include "hash.hh"               // for Hash, HashType, hashString, htSHA1
-#include "libfetchers/attrs.hh"  // for Attrs, getStrAttr, maybeGetStrAttr
+#include "attrs.hh"  // for Attrs, getStrAttr, maybeGetStrAttr
 #include "logging.hh"            // for warn, Activity, actUnknown, logger
 #include "path.hh"               // for StorePath
 #include "ref.hh"                // for ref

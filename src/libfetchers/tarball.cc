@@ -23,7 +23,7 @@
 #include "content-address.hh"    // for ContentAddress, FileIngestionMethod
 #include "error.hh"              // for Error
 #include "hash.hh"               // for hashString, htSHA256, Hash, SRI
-#include "libfetchers/attrs.hh"  // for getStrAttr, Attrs, getIntAttr, maybe...
+#include "attrs.hh"  // for getStrAttr, Attrs, getIntAttr, maybe...
 #include "logging.hh"            // for warn
 #include "path-info.hh"          // for ValidPathInfo
 #include "path.hh"               // for StorePath

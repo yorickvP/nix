@@ -12,7 +12,7 @@
 #include "content-address.hh"    // for FileIngestionMethod, FileIngestionMe...
 #include "error.hh"              // for Error, ErrPos, UsageError
 #include "hash.hh"               // for Hash, HashType, SRI, htSHA256, BadHash
-#include "libfetchers/attrs.hh"  // for maybeGetStrAttr, attrsToJSON, Attrs
+#include "attrs.hh"  // for maybeGetStrAttr, attrsToJSON, Attrs
 #include "logging.hh"            // for Logger, debug
 #include "path-info.hh"          // for ValidPathInfo
 #include "ref.hh"                // for ref

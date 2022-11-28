@@ -26,7 +26,7 @@
 #include "error.hh"              // for Error
 #include "fmt.hh"                // for fmt
 #include "hash.hh"               // for Hash, HashType, htSHA1, Base16
-#include "libfetchers/attrs.hh"  // for getStrAttr, maybeGetStrAttr, Attrs
+#include "attrs.hh"  // for getStrAttr, maybeGetStrAttr, Attrs
 #include "logging.hh"            // for warn, Logger, debug
 #include "path.hh"               // for StorePath
 #include "ref.hh"                // for ref

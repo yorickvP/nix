@@ -11,6 +11,7 @@
   { include: ["@<boost/format/.*>", "private", "<boost/format.hpp>", "public"] },
   { include: ["@<boost/lexical_cast/.*>", "private", "<boost/lexical_cast.hpp>", "public"] },
 	{ include: ["<boost/detail/basic_pointerbuf.hpp>", "private", "<boost/lexical_cast.hpp>", "public"], },
+  { include: ["@<boost/coroutine2/detail/.*>", "private", "<boost/coroutine2/coroutine.hpp>", "public" ]},
   { include: ["@<nlohmann/detail/.*>", "private", "<nlohmann/json.hpp>", "public"] },
   { include: ["<boost/cstdint.hpp>", "private", "<stdint.h>", "public"] },
   { symbol: ["nlohmann::json", "private", "<nlohmann/json_fwd.hpp>", "public" ] },

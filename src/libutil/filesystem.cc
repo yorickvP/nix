@@ -17,9 +17,9 @@
 #include "finally.hh"          // for Finally
 #include "util.hh"             // for canonPath, getEnv, AutoCloseFD, baseNa...
 #include "types.hh"            // for Path
-#include "libutil/error.hh"    // for SysError, Error
-#include "libutil/fmt.hh"      // for fmt, format
-#include "libutil/logging.hh"  // for warn
+#include "error.hh"    // for SysError, Error
+#include "fmt.hh"      // for fmt, format
+#include "logging.hh"  // for warn
 
 namespace fs = std::filesystem;
 

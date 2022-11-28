@@ -12,8 +12,8 @@
 #include "url-parts.hh"      // for queryRegex, absPathRegex, authorityRegex
 #include "util.hh"           // for tokenizeString
 #include "split.hh"          // for splitPrefixTo
-#include "libutil/fmt.hh"    // for fmt
-#include "libutil/types.hh"  // for Strings
+#include "fmt.hh"    // for fmt
+#include "types.hh"  // for Strings
 
 namespace nix {
 

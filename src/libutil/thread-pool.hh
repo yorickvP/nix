@@ -14,7 +14,7 @@
 #include <vector>              // for vector
 
 #include "sync.hh"             // for Sync
-#include "libutil/error.hh"    // for Error, MakeError
+#include "error.hh"    // for Error, MakeError
 
 namespace nix {
 

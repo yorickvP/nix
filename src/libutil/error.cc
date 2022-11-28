@@ -1,18 +1,17 @@
-#include <assert.h>                         // for assert
-#include <fcntl.h>                          // for open, O_CLOEXEC, O_RDONLY
-#include <boost/format.hpp>                 // for basic_altstringbuf<>::int...
-#include <optional>                         // for optional, nullopt, operat...
-#include <sstream>                          // for operator<<, ostream, ostr...
-#include <memory>                           // for allocator
-#include <set>                              // for set
+#include <assert.h>          // for assert
+#include <fcntl.h>           // for open, O_CLOEXEC, O_RDONLY
+#include <boost/format.hpp>  // for basic_altstringbuf<>::int_type, basic_al...
+#include <optional>          // for optional, nullopt, operator!=
+#include <sstream>           // for operator<<, basic_ostream, endl, basic_o...
+#include <set>               // for set
 
 #include "error.hh"
-#include "libutil/ansicolor.hh"             // for ANSI_NORMAL, ANSI_WARNING
-#include "libutil/config.hh"                // for Setting
-#include "libutil/fmt.hh"                   // for fmt, hintformat, operator<<
-#include "libutil/logging.hh"               // for LoggerSettings, loggerSet...
-#include "libutil/suggestions.hh"           // for Suggestions, operator<<
-#include "libutil/util.hh"                  // for chomp, AutoCloseFD, filte...
+#include "ansicolor.hh"      // for ANSI_NORMAL, ANSI_WARNING, ANSI_GREEN
+#include "config.hh"         // for Setting
+#include "fmt.hh"            // for fmt, hintformat, operator<<
+#include "logging.hh"        // for LoggerSettings, loggerSettings
+#include "suggestions.hh"    // for Suggestions, operator<<
+#include "util.hh"           // for chomp, AutoCloseFD, filterANSIEscapes
 
 namespace nix {
 

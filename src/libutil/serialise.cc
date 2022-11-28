@@ -1,31 +1,25 @@
-#include <boost/coroutine2/coroutine.hpp>                     // for corouti...
-#include <assert.h>                                           // for assert
-#include <cxxabi.h>                                           // for __force...
-#include <stdlib.h>                                           // for abort
-#include <unistd.h>                                           // for read
-#include <boost/context/detail/exception.hpp>                 // for forced_...
-#include <boost/context/stack_context.hpp>                    // for stack_c...
-#include <boost/coroutine2/detail/pull_control_block_cc.ipp>  // for pull_co...
-#include <boost/coroutine2/detail/pull_coroutine.hpp>         // for pull_co...
-#include <boost/coroutine2/detail/pull_coroutine.ipp>         // for pull_co...
-#include <boost/coroutine2/detail/push_control_block_cc.ipp>  // for push_co...
-#include <boost/coroutine2/detail/push_coroutine.hpp>         // for push_co...
-#include <boost/coroutine2/detail/push_coroutine.ipp>         // for push_co...
-#include <boost/coroutine2/fixedsize_stack.hpp>               // for default...
-#include <boost/version.hpp>                                  // for BOOST_V...
-#include <boost/format.hpp>                                   // for basic_a...
-#include <cerrno>                                             // for EINTR
-#include <memory>                                             // for unique_ptr
-#include <list>                                               // for operator!=
-#include <optional>                                           // for optional
-#include <set>                                                // for operator!=
+#include <boost/coroutine2/coroutine.hpp>        // for coroutine<>::pull_type
+#include <assert.h>                              // for assert
+#include <cxxabi.h>                              // for __forced_unwind
+#include <stdlib.h>                              // for abort
+#include <unistd.h>                              // for read, ssize_t
+#include <boost/context/detail/exception.hpp>    // for forced_unwind
+#include <boost/context/stack_context.hpp>       // for stack_context
+#include <boost/coroutine2/fixedsize_stack.hpp>  // for default_stack
+#include <boost/version.hpp>                     // for BOOST_VERSION
+#include <boost/format.hpp>                      // for basic_altstringbuf<>...
+#include <cerrno>                                // for EINTR, errno
+#include <memory>                                // for unique_ptr, allocator
+#include <list>                                  // for operator!=, list
+#include <optional>                              // for optional
+#include <set>                                   // for operator!=, set
 
 #include "serialise.hh"
-#include "util.hh"                                            // for EndOfFile
-#include "libutil/fmt.hh"                                     // for hintformat
-#include "libutil/suggestions.hh"                             // for Suggestion
-#include "libutil/types.hh"                                   // for Strings
-#include "libutil/error.hh"                                   // for Trace
+#include "util.hh"                               // for EndOfFile, checkInte...
+#include "fmt.hh"                                // for hintformat, format
+#include "suggestions.hh"                        // for Suggestion
+#include "types.hh"                              // for Strings, StringSet
+#include "error.hh"                              // for Trace, Error, ErrorInfo
 
 
 namespace nix {

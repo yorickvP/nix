@@ -6,9 +6,9 @@
 
 #include "serialise.hh"        // for Source
 #include "tarfile.hh"
-#include "libutil/error.hh"    // for Error
-#include "libutil/logging.hh"  // for warn
-#include "libutil/util.hh"     // for createDirs, EndOfFile
+#include "error.hh"    // for Error
+#include "logging.hh"  // for warn
+#include "util.hh"     // for createDirs, EndOfFile
 
 namespace nix {
 

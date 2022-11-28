@@ -11,10 +11,10 @@
 #include "abstract-setting-to-json.hh"
 #include "args.hh"                   // for Args
 #include "experimental-features.hh"  // for ExperimentalFeature, parseExperi...
-#include "libutil/error.hh"          // for UsageError, Error, SysError
-#include "libutil/logging.hh"        // for warn
-#include "libutil/types.hh"          // for Strings, StringMap, StringSet, Path
-#include "libutil/util.hh"           // for concatStringsSep, tokenizeString
+#include "error.hh"          // for UsageError, Error, SysError
+#include "logging.hh"        // for warn
+#include "types.hh"          // for Strings, StringMap, StringSet, Path
+#include "util.hh"           // for concatStringsSep, tokenizeString
 
 namespace nix {
 

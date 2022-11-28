@@ -6,7 +6,7 @@
 
 #include "ref.hh"            // for ref
 #include "serialise.hh"      // for BufferedSink, FinishSink
-#include "libutil/error.hh"  // for Error, MakeError
+#include "error.hh"  // for Error, MakeError
 
 namespace nix {
 

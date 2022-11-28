@@ -13,9 +13,9 @@
 #include "logging.hh"
 #include "util.hh"               // for filterANSIEscapes, getEnv, hasPrefix
 #include "config.hh"             // for Setting, GlobalConfig, GlobalConfig:...
-#include "libutil/ansicolor.hh"  // for ANSI_NORMAL, ANSI_WARNING
-#include "libutil/error.hh"      // for ErrorInfo, ErrPos, Verbosity, Trace
-#include "libutil/fmt.hh"        // for FormatOrString, hintformat
+#include "ansicolor.hh"  // for ANSI_NORMAL, ANSI_WARNING
+#include "error.hh"      // for ErrorInfo, ErrPos, Verbosity, Trace
+#include "fmt.hh"        // for FormatOrString, hintformat
 
 namespace nix {
 

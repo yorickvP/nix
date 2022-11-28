@@ -7,10 +7,10 @@
 
 #include "args.hh"
 #include "hash.hh"                 // for HashType, parseHashType, hashTypes
-#include "libutil/error.hh"        // for UsageError, lvlError
-#include "libutil/logging.hh"      // for verbosity
-#include "libutil/suggestions.hh"  // for Suggestions
-#include "libutil/util.hh"         // for hasPrefix, trim, enumerate, expand...
+#include "error.hh"        // for UsageError, lvlError
+#include "logging.hh"      // for verbosity
+#include "suggestions.hh"  // for Suggestions
+#include "util.hh"         // for hasPrefix, trim, enumerate, expand...
 
 namespace nix {
 

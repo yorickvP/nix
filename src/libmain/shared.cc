@@ -30,7 +30,7 @@
 #include "args.hh"                 // for argvToStrings
 #include "config.hh"               // for Setting, operator<<
 #include "fmt.hh"                  // for fmt, format
-#include "libmain/common-args.hh"  // for MixCommonArgs
+#include "common-args.hh"  // for MixCommonArgs
 #include "logging.hh"              // for Logger, printMsg, printError, warn
 #include "ref.hh"                  // for ref
 #ifdef __linux__

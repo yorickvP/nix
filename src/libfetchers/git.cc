@@ -35,7 +35,7 @@
 #include "error.hh"              // for Error, UnimplementedError, lvlTalkative
 #include "fmt.hh"                // for fmt
 #include "hash.hh"               // for Hash, HashType, htSHA1, htSHA256
-#include "libfetchers/attrs.hh"  // for maybeGetBoolAttr, Attrs, getStrAttr
+#include "attrs.hh"  // for maybeGetBoolAttr, Attrs, getStrAttr
 #include "logging.hh"            // for warn, Logger, debug, Activity, actUn...
 #include "path.hh"               // for StorePath
 #include "ref.hh"                // for ref

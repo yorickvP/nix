@@ -13,8 +13,8 @@
 #include "tarfile.hh"            // for TarArchive
 #include "util.hh"               // for checkInterrupt, EndOfFile
 #include "logging.hh"            // for warn
-#include "libutil/ref.hh"        // for make_ref, ref
-#include "libutil/serialise.hh"  // for StringSink, FinishSink, Sink, source...
+#include "ref.hh"        // for make_ref, ref
+#include "serialise.hh"  // for StringSink, FinishSink, Sink, source...
 
 namespace nix {
 

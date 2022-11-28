@@ -10,7 +10,7 @@
 #include "url-parts.hh"          // for refRegex, revRegex
 #include "error.hh"              // for Error
 #include "hash.hh"               // for Hash, HashType, htSHA1
-#include "libfetchers/attrs.hh"  // for Attrs, getStrAttr, maybeGetStrAttr
+#include "attrs.hh"  // for Attrs, getStrAttr, maybeGetStrAttr
 #include "path.hh"               // for StorePath
 #include "ref.hh"                // for ref
 #include "types.hh"              // for OnStartup

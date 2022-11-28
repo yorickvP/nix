@@ -2,7 +2,7 @@
 #include <string>            // for allocator, string
 #include <vector>            // for vector
 
-#include "libutil/types.hh"  // for Path
+#include "types.hh"  // for Path
 
 namespace nix {
 struct Source;

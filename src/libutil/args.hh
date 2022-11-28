@@ -16,8 +16,8 @@
 #include <vector>                 // for vector, max
 
 #include "util.hh"                // for string2IntWithUnitPrefix
-#include "libutil/ref.hh"         // for ref
-#include "libutil/types.hh"       // for Strings
+#include "ref.hh"                 // for ref
+#include "types.hh"               // for Strings
 
 namespace nix {
 

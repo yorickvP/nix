@@ -13,11 +13,11 @@
 #include "archive.hh"
 #include "util.hh"                          // for AutoCloseFD, checkInterrupt
 #include "config.hh"                        // for Setting, Config, GlobalCo...
-#include "libutil/error.hh"                 // for SysError, Error
-#include "libutil/fmt.hh"                   // for format
-#include "libutil/logging.hh"               // for Logger, debug
-#include "libutil/serialise.hh"             // for operator<<, Sink, readString
-#include "libutil/types.hh"                 // for Path
+#include "error.hh"                 // for SysError, Error
+#include "fmt.hh"                   // for format
+#include "logging.hh"               // for Logger, debug
+#include "serialise.hh"             // for operator<<, Sink, readString
+#include "types.hh"                 // for Path
 
 namespace nix {
 

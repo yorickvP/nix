@@ -58,7 +58,7 @@ extern "C" {
 #include "flake/flakeref.hh"         // for parseFlakeRef, FlakeRef
 #include "flake/lockfile.hh"         // for InputPath
 #include "fmt.hh"                    // for hintformat
-#include "libcmd/installables.hh"    // for Installable
+#include "installables.hh"    // for Installable
 #include "logging.hh"                // for Logger, logger, warn, LoggerSett...
 #include "nixexpr.hh"                // for StaticEnv, StaticEnv::Vars, Asse...
 #include "path.hh"                   // for StorePath, OutputPathMap
