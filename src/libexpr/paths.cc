@@ -83,8 +83,8 @@ EvalState::mountInput(fetchers::Input & input, const fetchers::Input & originalI
             (unsigned int) 102,
             "NAR hash mismatch in input '%s', expected '%s' but got '%s'",
             originalInput.to_string(),
-            narHash.to_string(HashFormat::SRI, true),
-            originalInput.getNarHash()->to_string(HashFormat::SRI, true));
+            originalInput.getNarHash()->to_string(HashFormat::SRI, true),
+            narHash.to_string(HashFormat::SRI, true));
 
     return storePath;
 }
