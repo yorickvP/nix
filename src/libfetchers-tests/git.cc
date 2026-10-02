@@ -199,4 +199,87 @@ TEST_F(GitTest, submodulePeriodSupport)
     ASSERT_EQ(accessor->readFile(CanonPath("deps/sub/lib.txt")), "hello from submodule\n");
 }
 
+TEST_F(GitTest, workdirSnapshot)
+{
+    auto repoPath = tmpDir / "repo";
+
+    RepoHandle rawRepo;
+    {
+        git_repository * raw = nullptr;
+        CHECK_LIBGIT(git_repository_init(&raw, repoPath.string().c_str(), /*is_bare=*/0));
+        rawRepo.reset(raw);
+    }
+
+    createDirs(repoPath / "dir" / "sub");
+    createDirs(repoPath / "unchanged");
+    writeFile(repoPath / "changed", "old\n");
+    writeFile(repoPath / "dir" / "deleted", "deleted\n");
+    writeFile(repoPath / "dir" / "sub" / "file", "file\n");
+    writeFile(repoPath / "unchanged" / "file", "unchanged\n");
+    writeFile(repoPath / "exec", "#! /bin/sh\n");
+    std::filesystem::permissions(
+        repoPath / "exec", std::filesystem::perms::owner_exec, std::filesystem::perm_options::add);
+    std::filesystem::create_symlink("changed", repoPath / "link");
+    commitAll(rawRepo.get(), "init");
+
+    auto repo = GitRepo::openRepo(repoPath, {});
+    auto cache = GitRepo::openRepo(tmpDir / "cache", {.create = true, .bare = true, .packfilesOnly = true});
+    auto notAllowed = [](const CanonPath & path) { return RestrictedPathError("'%s' is not tracked", path); };
+    auto settings = fetchers::Settings{};
+
+    auto getHeadTree = [&]() {
+        git_object * raw = nullptr;
+        EXPECT_EQ(git_revparse_single(&raw, rawRepo.get(), "HEAD^{tree}"), 0);
+        auto res = std::string(git_oid_tostr_s(git_object_id(raw)));
+        git_object_free(raw);
+        return res;
+    };
+
+    /* A clean working directory is the tree of HEAD. */
+    {
+        auto wd = repo->getWorkdirInfo();
+        ASSERT_FALSE(wd.isDirty);
+        auto snapshot = repo->snapshotWorkdir(settings, *cache, wd, {}, notAllowed);
+        ASSERT_EQ(snapshot.treeHash.gitRev(), getHeadTree());
+        ASSERT_EQ(
+            snapshot.accessor->hashPath(CanonPath::root),
+            repo->getAccessor(wd, {}, notAllowed)->hashPath(CanonPath::root));
+    }
+
+    writeFile(repoPath / "changed", "new\n");
+    std::filesystem::remove(repoPath / "dir" / "deleted");
+    writeFile(repoPath / "dir" / "added", "added\n");
+    writeFile(repoPath / "untracked", "untracked\n");
+    std::filesystem::permissions(
+        repoPath / "exec", std::filesystem::perms::owner_exec, std::filesystem::perm_options::remove);
+    {
+        IndexHandle idx;
+        git_index * raw = nullptr;
+        CHECK_LIBGIT(git_repository_index(&raw, rawRepo.get()));
+        idx.reset(raw);
+        CHECK_LIBGIT(git_index_add_bypath(idx.get(), "dir/added"));
+        CHECK_LIBGIT(git_index_write(idx.get()));
+    }
+
+    auto wd = repo->getWorkdirInfo();
+    ASSERT_TRUE(wd.isDirty);
+    auto live = repo->getAccessor(wd, {}, notAllowed);
+    auto snapshot = repo->snapshotWorkdir(settings, *cache, wd, {}, notAllowed);
+
+    auto narHash = live->hashPath(CanonPath::root);
+    ASSERT_EQ(snapshot.accessor->hashPath(CanonPath::root), narHash);
+    ASSERT_EQ(snapshot.accessor->readFile(CanonPath("changed")), "new\n");
+    ASSERT_FALSE(snapshot.accessor->lstat(CanonPath("exec")).isExecutable);
+    ASSERT_FALSE(snapshot.accessor->pathExists(CanonPath("dir/deleted")));
+    ASSERT_THROW(snapshot.accessor->readFile(CanonPath("untracked")), RestrictedPathError);
+    ASSERT_EQ(snapshot.accessor->getPhysicalPath(CanonPath("changed")), repoPath / "changed");
+
+    /* The snapshot doesn't change if the working directory does. */
+    writeFile(repoPath / "changed", "newer\n");
+    ASSERT_EQ(snapshot.accessor->readFile(CanonPath("changed")), "new\n");
+
+    std::filesystem::remove_all(repoPath);
+    ASSERT_EQ(snapshot.accessor->hashPath(CanonPath::root), narHash);
+}
+
 } // namespace nix::fetchers

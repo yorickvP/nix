@@ -5,6 +5,7 @@ suites += {
     'exact-rev-fetch-bucketed-refs.sh',
     'packed-refs-no-cache.sh',
     'symlinked-repo.sh',
+    'workdir-snapshot.sh',
   ],
   'workdir' : meson.current_source_dir(),
 }

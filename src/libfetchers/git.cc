@@ -1024,8 +1024,32 @@ struct GitInputScheme : InputScheme
 
         auto exportIgnore = getExportIgnoreAttr(input);
 
-        ref<SourceAccessor> accessor =
-            repo->getAccessor(repoInfo.workdirInfo, {.exportIgnore = exportIgnore}, makeNotAllowedError(repoPath));
+        /* Return an accessor for a snapshot of the working directory
+           rather than for the working directory itself. The evaluator
+           mounts the accessor at the store path computed from its
+           contents, and only copies it to the store when needed, so the
+           contents must not change if the working directory is modified
+           or deleted in the meantime. */
+        auto snapshot = repo->snapshotWorkdir(
+            settings,
+            *settings.getTarballCache(),
+            repoInfo.workdirInfo,
+            {.exportIgnore = exportIgnore, .smudgeLfs = getLfsAttr(input)},
+            makeNotAllowedError(repoPath));
+
+        ref<SourceAccessor> accessor = snapshot.accessor;
+
+        /* The contents of the snapshot are determined by its tree. The
+           fingerprint also determines the attributes that we return
+           (like `rev` and `dirtyRev`), since it's used as the key of the
+           evaluation cache. If there are submodules, the contents also
+           depend on their accessors, so leave it to getFingerprint(). */
+        if (repoInfo.workdirInfo.submodules.empty())
+            accessor->fingerprint =
+                fmt("git:%s;t=%s%s",
+                    makeFingerprint(input, repoInfo.workdirInfo.headRev.value_or(nullRev)),
+                    snapshot.treeHash.gitRev(),
+                    repoInfo.workdirInfo.isDirty ? ";dirty" : "");
 
         /* If the repo has submodules, return a mounted input accessor
            consisting of the accessor for the top-level repo and, per
@@ -1127,15 +1151,16 @@ struct GitInputScheme : InputScheme
         return {accessor, std::move(final)};
     }
 
+    std::string makeFingerprint(const Input & input, const Hash & rev) const
+    {
+        return rev.gitRev() + (getSubmodulesAttr(input) ? ";s" : "") + (getExportIgnoreAttr(input) ? ";e" : "")
+               + (getLfsAttr(input) ? ";l" : "");
+    }
+
     std::optional<std::string> getFingerprint(Store & store, const Input & input) const override
     {
-        auto makeFingerprint = [&](const Hash & rev) {
-            return rev.gitRev() + (getSubmodulesAttr(input) ? ";s" : "") + (getExportIgnoreAttr(input) ? ";e" : "")
-                   + (getLfsAttr(input) ? ";l" : "");
-        };
-
         if (auto rev = input.getRev())
-            return makeFingerprint(*rev);
+            return makeFingerprint(input, *rev);
         else {
             auto repoInfo = getRepoInfo(input);
             if (auto repoPath = repoInfo.getPath(); repoPath && repoInfo.workdirInfo.submodules.empty()) {
@@ -1151,7 +1176,7 @@ struct GitInputScheme : InputScheme
                     writeString("deleted:", hashSink);
                     writeString(file.abs(), hashSink);
                 }
-                return makeFingerprint(repoInfo.workdirInfo.headRev.value_or(nullRev))
+                return makeFingerprint(input, repoInfo.workdirInfo.headRev.value_or(nullRev))
                        + ";d=" + hashSink.finish().hash.to_string(HashFormat::Base16, false);
             }
             return std::nullopt;

@@ -157,7 +157,7 @@ static std::string getLfsEndpointUrl(git_repository * repo)
     return std::string(url_c_str);
 }
 
-static std::optional<Pointer> parseLfsPointer(std::string_view content, std::string_view filename)
+std::optional<Pointer> parseLfsPointer(std::string_view content, std::string_view filename)
 {
     // https://github.com/git-lfs/git-lfs/blob/2ef4108/docs/spec.md
     //

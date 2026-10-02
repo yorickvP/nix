@@ -96,6 +96,56 @@ struct GitRepo
     virtual ref<SourceAccessor> getAccessor(
         const WorkdirInfo & wd, const GitAccessorOptions & options, MakeNotAllowedError makeNotAllowedError) = 0;
 
+    struct WorkdirSnapshot
+    {
+        /**
+         * The Git tree in the destination repository that holds the
+         * snapshot.
+         */
+        Hash treeHash;
+
+        ref<SourceAccessor> accessor;
+    };
+
+    /**
+     * Copy the working directory described by `wd` into `dest`
+     * (normally the tarball cache) as a Git tree, and return an
+     * accessor for that tree. Unlike `getAccessor(wd, options, ...)`,
+     * the snapshot doesn't change if the working directory is modified
+     * or deleted afterwards.
+     *
+     * The snapshot has the same files as `getAccessor(wd, options,
+     * ...)`. Files that Git considers unchanged from HEAD are not read
+     * from disk: their blobs, and entire unchanged subtrees, are copied
+     * from this repository. So for those files, the snapshot has what
+     * Git would commit, e.g. after normalizing line endings, and the
+     * permissions and file type in HEAD (which Git may not check, see
+     * `core.fileMode` and `core.symlinks`). This means that a clean
+     * working directory has the same contents as HEAD. The exception
+     * are files that have a `filter` attribute
+     * (like Git LFS), since their blob may be unrelated to the file
+     * (like a pointer to it); those are read from disk. Other files are
+     * read from disk as is.
+     *
+     * If `options.smudgeLfs` is set, files stored in Git LFS get the
+     * contents that their pointer refers to, like when fetching a
+     * commit: from the working directory, Git LFS's local object store
+     * or the LFS server, whichever is first to have contents that match
+     * the pointer. The resulting blobs are recorded in the fetcher
+     * cache of `settings`, so they don't have to be read again.
+     *
+     * The returned accessor reads from the snapshot, but it reports
+     * paths in the working directory (for error messages and `nix
+     * edit`), and it throws `makeNotAllowedError` for paths that are not
+     * tracked by Git.
+     */
+    virtual WorkdirSnapshot snapshotWorkdir(
+        const fetchers::Settings & settings,
+        GitRepo & dest,
+        const WorkdirInfo & wd,
+        const GitAccessorOptions & options,
+        MakeNotAllowedError makeNotAllowedError) = 0;
+
     virtual void flush() = 0;
 
     virtual std::unique_ptr<merkle::DirectorySinkWithFinalize> makeDirectorySink() = 0;

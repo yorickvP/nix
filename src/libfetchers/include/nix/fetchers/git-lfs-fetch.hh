@@ -22,6 +22,12 @@ struct Pointer
     size_t size;     // in bytes
 };
 
+/**
+ * Parse the contents of a git-lfs pointer file, or return nothing if
+ * it isn't one.
+ */
+std::optional<Pointer> parseLfsPointer(std::string_view content, std::string_view filename);
+
 struct Fetch
 {
     // Reference to the repository

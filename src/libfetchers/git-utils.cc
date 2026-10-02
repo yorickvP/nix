@@ -148,6 +148,7 @@ typedef std::unique_ptr<git_odb, Deleter<git_odb_free>> ObjectDb;
 typedef std::unique_ptr<git_packbuilder, Deleter<git_packbuilder_free>> PackBuilder;
 typedef std::unique_ptr<git_indexer, Deleter<git_indexer_free>> Indexer;
 typedef std::unique_ptr<git_index, Deleter<git_index_free>> Index;
+typedef std::unique_ptr<git_odb_object, Deleter<git_odb_object_free>> OdbObject;
 
 static Hash toHash(const git_oid & oid)
 {
@@ -716,6 +717,13 @@ struct GitRepoImpl : GitRepo, std::enable_shared_from_this<GitRepoImpl>
 
     ref<SourceAccessor>
     getAccessor(const WorkdirInfo & wd, const GitAccessorOptions & options, MakeNotAllowedError e) override;
+
+    WorkdirSnapshot snapshotWorkdir(
+        const fetchers::Settings & settings,
+        GitRepo & dest,
+        const WorkdirInfo & wd,
+        const GitAccessorOptions & options,
+        MakeNotAllowedError makeNotAllowedError) override;
 
     void fetch(const std::string & url, const std::string & refspec, bool shallow) override
     {
@@ -1418,6 +1426,663 @@ ref<SourceAccessor> GitRepoImpl::getAccessor(
     if (options.exportIgnore)
         fileAccessor = make_ref<GitExportIgnoreSourceAccessor>(self, fileAccessor, std::nullopt);
     return fileAccessor;
+}
+
+namespace {
+
+/**
+ * Return the directories in which libgit2 looks for configuration and
+ * attribute files at the given level.
+ */
+std::vector<std::filesystem::path> getSearchPath(git_config_level_t level)
+{
+    git_buf buf = GIT_BUF_INIT;
+    Finally cleanup = [&]() { git_buf_dispose(&buf); };
+    if (git_libgit2_opts(GIT_OPT_GET_SEARCH_PATH, level, &buf))
+        throw GitError("getting the libgit2 search path");
+    std::vector<std::filesystem::path> res;
+    if (buf.ptr)
+        for (auto & dir :
+             tokenizeString<std::vector<std::string>>(std::string(buf.ptr), std::string(1, GIT_PATH_LIST_SEPARATOR)))
+            res.push_back(dir);
+    return res;
+}
+
+/**
+ * The attribute files that apply to a working directory, so that we can
+ * find out where an attribute might be set without querying the
+ * attributes of every file.
+ */
+struct AttributeFiles
+{
+    /**
+     * The contents of the files that apply to the entire working
+     * directory, or `std::nullopt` if a file couldn't be read.
+     */
+    std::vector<std::optional<std::string>> global;
+
+    /**
+     * The contents of the `.gitattributes` files, by directory.
+     */
+    std::vector<std::pair<CanonPath, std::optional<std::string>>> local;
+
+    /**
+     * Return the directories in whose subtrees `attribute` might be
+     * set, namely those with an attribute file that mentions it. This
+     * is a conservative textual check.
+     */
+    std::vector<CanonPath> getScope(std::string_view attribute) const
+    {
+        auto mentions = [&](const std::optional<std::string> & contents) {
+            return !contents || contents->find(attribute) != contents->npos;
+        };
+        if (std::ranges::any_of(global, mentions))
+            return {CanonPath::root};
+        std::vector<CanonPath> dirs;
+        for (auto & [dir, contents] : local)
+            if (mentions(contents))
+                dirs.push_back(dir);
+        return dirs;
+    }
+};
+
+bool isWithinAny(const CanonPath & path, const std::vector<CanonPath> & dirs)
+{
+    return std::ranges::any_of(dirs, [&](auto & dir) { return path.isWithin(dir); });
+}
+
+/**
+ * Builds a Git tree in `dest` that has the contents of the working
+ * directory accessor `workdir`, except that files that Git considers
+ * unchanged get their blob and mode from HEAD. See
+ * `GitRepo::snapshotWorkdir()`.
+ */
+struct WorkdirSnapshotter
+{
+    /**
+     * The repository of the working directory.
+     */
+    GitRepoImpl & repo;
+
+    GitRepoImpl & dest;
+
+    const fetchers::Settings & settings;
+
+    const GitRepo::WorkdirInfo & wd;
+
+    /**
+     * The working directory, filtered in the same way as the accessor
+     * that we're making a snapshot of.
+     */
+    SourceAccessor & workdir;
+
+    ObjectDb repoOdb, destOdb;
+
+    std::optional<Tree> headTree;
+
+    /**
+     * Files that Git considers unchanged, but that we nevertheless
+     * have to read from disk.
+     */
+    std::set<CanonPath> mustRead;
+
+    /**
+     * Whether to resolve the pointers of files stored in Git LFS.
+     */
+    bool smudgeLfs;
+
+    /**
+     * Files stored in Git LFS, if `smudgeLfs` is set.
+     */
+    std::set<CanonPath> lfsFiles;
+
+    std::optional<lfs::Fetch> lfsFetch;
+
+    /**
+     * Directories that we can't take from HEAD, because they contain
+     * files that we can't take from HEAD, or that may be export-ignored.
+     */
+    std::set<CanonPath> changedDirs;
+
+    std::set<CanonPath> submodules;
+
+    /**
+     * The size of the objects written to `dest` since it was last
+     * flushed. Until then, they're kept in memory.
+     */
+    uint64_t unflushedBytes = 0;
+
+    WorkdirSnapshotter(
+        GitRepoImpl & repo,
+        GitRepoImpl & dest,
+        const fetchers::Settings & settings,
+        const GitRepo::WorkdirInfo & wd,
+        SourceAccessor & workdir,
+        const GitAccessorOptions & options)
+        : repo(repo)
+        , dest(dest)
+        , settings(settings)
+        , wd(wd)
+        , workdir(workdir)
+        , smudgeLfs(options.smudgeLfs)
+    {
+        if (git_repository_odb(Setter(repoOdb), repo))
+            throw GitError("getting the object database of Git repository %s", PathFmt(repo.path));
+        if (git_repository_odb(Setter(destOdb), dest))
+            throw GitError("getting the object database of Git repository %s", PathFmt(dest.path));
+
+        if (wd.headRev) {
+            auto commit = peelObject<Commit>(lookupObject(repo, hashToOID(*wd.headRev)).get(), GIT_OBJECT_COMMIT);
+            Tree tree;
+            if (git_commit_tree(Setter(tree), commit.get()))
+                throw GitError("getting the tree of Git commit '%s'", wd.headRev->gitRev());
+            headTree = std::move(tree);
+        }
+
+        for (auto & submodule : wd.submodules)
+            submodules.insert(submodule.path);
+
+        Index index;
+        if (git_repository_index(Setter(index), repo))
+            throw GitError("opening index of Git repository %s", PathFmt(repo.path));
+
+        auto attributes = readAttributeFiles(index.get());
+
+        findFilesToRead(index.get(), attributes);
+
+        auto markChanged = [&](const CanonPath & file) {
+            for (auto dir = file.parent(); dir; dir = dir->parent())
+                if (!changedDirs.insert(*dir).second)
+                    break;
+        };
+
+        for (auto * files : std::initializer_list<const std::set<CanonPath> *>{
+                 &wd.dirtyFiles, &wd.deletedFiles, &mustRead, &lfsFiles, &submodules})
+            for (auto & file : *files)
+                markChanged(file);
+
+        /* Export-ignored files are hidden from the working directory,
+           but not from HEAD. */
+        if (options.exportIgnore)
+            if (auto dirs = attributes.getScope("export-ignore"); !dirs.empty())
+                for (auto & file : wd.files)
+                    if (isWithinAny(file, dirs))
+                        markChanged(file);
+    }
+
+    AttributeFiles readAttributeFiles(git_index * index)
+    {
+        AttributeFiles res;
+
+        auto readIfExists = [](const std::filesystem::path & path) -> std::optional<std::string> {
+            try {
+                return pathExists(path) ? readFile(path) : "";
+            } catch (SystemError &) {
+                return std::nullopt;
+            }
+        };
+
+        GitConfig config;
+        if (git_repository_config_snapshot(Setter(config), repo))
+            throw GitError("reading the configuration of Git repository %s", PathFmt(repo.path));
+
+        {
+            git_buf buf = GIT_BUF_INIT;
+            Finally cleanup = [&]() { git_buf_dispose(&buf); };
+            if (!git_repository_item_path(&buf, repo, GIT_REPOSITORY_ITEM_INFO))
+                res.global.push_back(readIfExists(std::filesystem::path(buf.ptr) / "attributes"));
+        }
+        {
+            git_buf buf = GIT_BUF_INIT;
+            Finally cleanup = [&]() { git_buf_dispose(&buf); };
+            if (!git_config_get_path(&buf, config.get(), "core.attributesfile"))
+                res.global.push_back(readIfExists(buf.ptr));
+            else
+                for (auto & dir : getSearchPath(GIT_CONFIG_LEVEL_XDG))
+                    res.global.push_back(readIfExists(dir / "attributes"));
+        }
+        for (auto & dir : getSearchPath(GIT_CONFIG_LEVEL_SYSTEM))
+            res.global.push_back(readIfExists(dir / "gitattributes"));
+
+        /* Git uses both the `.gitattributes` files in the working
+           directory (e.g. for filters) and in the index (e.g. for
+           export-ignore). We only look for untracked ones at the top
+           level. */
+        res.global.push_back(readIfExists(repo.path / ".gitattributes"));
+
+        for (size_t n = 0, count = git_index_entrycount(index); n < count; ++n) {
+            auto entry = git_index_get_byindex(index, n);
+            CanonPath path(entry->path);
+            if (path.baseName() != ".gitattributes")
+                continue;
+            auto contents = readIfExists(repo.path / path.rel());
+            Blob blob;
+            if (git_blob_lookup(Setter(blob), repo, &entry->id))
+                contents.reset();
+            else if (contents)
+                contents->append((const char *) git_blob_rawcontent(blob.get()), git_blob_rawsize(blob.get()));
+            res.local.emplace_back(*path.parent(), std::move(contents));
+        }
+
+        return res;
+    }
+
+    void findFilesToRead(git_index * index, const AttributeFiles & attributes)
+    {
+        /* Git doesn't compare these files to the working directory. */
+        for (size_t n = 0, count = git_index_entrycount(index); n < count; ++n) {
+            auto entry = git_index_get_byindex(index, n);
+            if ((entry->flags & GIT_INDEX_ENTRY_VALID) || (entry->flags_extended & GIT_INDEX_ENTRY_SKIP_WORKTREE))
+                mustRead.insert(CanonPath(entry->path));
+        }
+
+        /* Git compares files to HEAD after converting them to what it
+           would commit. Usually that only normalizes line endings, so
+           the blob is what the file should be. But with a filter (like
+           Git LFS), the blob can be something else entirely (like a
+           pointer to the actual file), so use the file on disk. */
+        auto dirs = attributes.getScope("filter");
+        if (dirs.empty())
+            return;
+
+        for (auto & file : wd.files) {
+            checkInterrupt();
+
+            /* Changed files are read from disk anyway, unless they're
+               Git LFS pointers that we need to resolve. */
+            if ((wd.dirtyFiles.contains(file) && !smudgeLfs) || mustRead.contains(file) || submodules.contains(file)
+                || !isWithinAny(file, dirs))
+                continue;
+
+            const char * filter;
+            if (git_attr_get(&filter, repo, GIT_ATTR_CHECK_FILE_THEN_INDEX, file.rel_c_str(), "filter"))
+                throw GitError("getting the attributes of '%s'", workdir.showPath(file));
+
+            if (smudgeLfs && git_attr_value(filter) == GIT_ATTR_VALUE_STRING && std::string_view(filter) == "lfs")
+                lfsFiles.insert(file);
+            else if (auto value = git_attr_value(filter);
+                     (value == GIT_ATTR_VALUE_TRUE || value == GIT_ATTR_VALUE_STRING) && !wd.dirtyFiles.contains(file))
+                mustRead.insert(file);
+        }
+    }
+
+    /**
+     * Copy an object from `repo` to `dest`, including any objects
+     * that it refers to.
+     */
+    void copyObject(const git_oid & oid)
+    {
+        if (git_odb_exists(destOdb.get(), &oid))
+            return;
+
+        checkInterrupt();
+
+        OdbObject obj;
+        if (git_odb_read(Setter(obj), repoOdb.get(), &oid))
+            throw GitError("reading Git object '%s'", oid);
+
+        auto type = git_odb_object_type(obj.get());
+
+        /* Copy the children of a tree first, so that the tree never
+           refers to missing objects. */
+        if (type == GIT_OBJECT_TREE) {
+            auto tree = lookupObject(repo, oid, GIT_OBJECT_TREE);
+            auto count = git_tree_entrycount((git_tree *) tree.get());
+            for (size_t n = 0; n < count; ++n) {
+                auto entry = git_tree_entry_byindex((git_tree *) tree.get(), n);
+                if (git_tree_entry_type(entry) != GIT_OBJECT_COMMIT)
+                    copyObject(*git_tree_entry_id(entry));
+            }
+        }
+
+        git_oid oid2;
+        if (git_odb_write(&oid2, destOdb.get(), git_odb_object_data(obj.get()), git_odb_object_size(obj.get()), type))
+            throw GitError("copying Git object '%s'", oid);
+        if (!git_oid_equal(&oid, &oid2))
+            throw Error("copying Git object '%s' produced object '%s'", oid, oid2);
+
+        wrote(git_odb_object_size(obj.get()));
+    }
+
+    void wrote(uint64_t size)
+    {
+        /* Flush every so often, so that copying a large working
+           directory doesn't need a lot of memory. */
+        unflushedBytes += size;
+        if (unflushedBytes >= 64 * 1024 * 1024) {
+            dest.flush();
+            unflushedBytes = 0;
+        }
+    }
+
+    /**
+     * If Git considers the file at `path` unchanged from `headEntry`,
+     * return the blob from HEAD.
+     */
+    std::optional<git_oid> getUnchangedBlob(const CanonPath & path, const git_tree_entry * headEntry)
+    {
+        if (!isUnchanged(path, headEntry))
+            return std::nullopt;
+
+        auto oid = *git_tree_entry_id(headEntry);
+        copyObject(oid);
+        return oid;
+    }
+
+    bool isUnchanged(const CanonPath & path, const git_tree_entry * headEntry)
+    {
+        return headEntry && git_tree_entry_type(headEntry) == GIT_OBJECT_BLOB && wd.files.contains(path)
+               && !wd.dirtyFiles.contains(path) && !mustRead.contains(path);
+    }
+
+    git_oid writeFile(const CanonPath & path)
+    {
+        auto sink = dest.makeRegularFileSink();
+        uint64_t size = 0;
+        workdir.readFile(path, *sink, [&](uint64_t s) { size = s; });
+        auto oid = hashToOID(std::move(*sink).finalize());
+        wrote(size);
+        return oid;
+    }
+
+    git_oid writeSymlink(const CanonPath & path)
+    {
+        auto target = workdir.readLink(path);
+        git_oid oid;
+        if (git_blob_create_from_buffer(&oid, dest, target.data(), target.size()))
+            throw GitError("creating a blob object for symlink '%s'", workdir.showPath(path));
+        return oid;
+    }
+
+    /**
+     * Get the contents of a file stored in Git LFS, i.e. the contents
+     * that its pointer refers to. Like `lfs::Fetch::fetch()`, use the
+     * file as is if it isn't a pointer.
+     */
+    git_oid getLfsFile(const CanonPath & path, const git_tree_entry * headEntry, const SourceAccessor::Stat & st)
+    {
+        /* Pointers are small, so don't bother reading anything larger. */
+        constexpr size_t maxPointerSize = 1024;
+
+        std::string contents;
+
+        if (isUnchanged(path, headEntry)) {
+            /* The pointer is in HEAD. */
+            auto oid = *git_tree_entry_id(headEntry);
+            Blob blob;
+            if (git_blob_lookup(Setter(blob), repo, &oid))
+                throw GitError("reading Git object '%s'", oid);
+            contents = std::string((const char *) git_blob_rawcontent(blob.get()), git_blob_rawsize(blob.get()));
+            if (contents.size() >= maxPointerSize || !lfs::parseLfsPointer(contents, path.rel())) {
+                copyObject(oid);
+                return oid;
+            }
+        } else {
+            /* The file has changed. It's a pointer if Git LFS hasn't
+               checked it out. */
+            if (!st.fileSize || *st.fileSize >= maxPointerSize)
+                return writeFile(path);
+            contents = workdir.readFile(path);
+        }
+
+        auto pointer = lfs::parseLfsPointer(contents, path.rel());
+        if (!pointer) {
+            git_oid oid;
+            if (git_blob_create_from_buffer(&oid, dest, contents.data(), contents.size()))
+                throw GitError("creating a blob object for '%s'", workdir.showPath(path));
+            return oid;
+        }
+
+        try {
+            return resolveLfsPointer(path, contents, *pointer, st);
+        } catch (Error & e) {
+            e.addTrace({}, "while getting the Git LFS file '%s'", workdir.showPath(path));
+            throw;
+        }
+    }
+
+    git_oid resolveLfsPointer(
+        const CanonPath & path,
+        const std::string & contents,
+        const lfs::Pointer & pointer,
+        const SourceAccessor::Stat & st)
+    {
+        fetchers::Cache::Key cacheKey{"gitLfsBlob", {{"oid", pointer.oid}}};
+
+        if (auto res = settings.getCache()->lookup(cacheKey)) {
+            auto oid = hashToOID(fetchers::getRevAttr(*res, "blob"));
+            if (git_odb_exists(destOdb.get(), &oid))
+                return oid;
+        }
+
+        /* Try the file in the working directory, if Git LFS has checked
+           it out, then Git LFS's own store, and finally the server. */
+        auto oid = [&]() -> std::optional<git_oid> {
+            if (st.type == SourceAccessor::tRegular && st.fileSize == pointer.size)
+                if (auto res = writeLfsObject(pointer, [&](Sink & sink) { workdir.readFile(path, sink); }))
+                    return res;
+
+            auto storePath = std::filesystem::path(git_repository_commondir(repo)) / "lfs" / "objects"
+                             / pointer.oid.substr(0, 2) / pointer.oid.substr(2, 2) / pointer.oid;
+            if (pathExists(storePath))
+                if (auto res = writeLfsObject(pointer, [&](Sink & sink) { readFile(storePath, sink); }))
+                    return res;
+
+            try {
+                if (!lfsFetch)
+                    lfsFetch.emplace(repo, wd.headRev ? hashToOID(*wd.headRev) : git_oid{});
+                return writeLfsObject(
+                    pointer, [&](Sink & sink) { lfsFetch->fetch(contents, path, sink, [](uint64_t) {}); });
+            } catch (Error & e) {
+                throw Error(
+                    "Git LFS file '%s' has not been checked out and is not in the local Git LFS store, and fetching it failed: %s",
+                    workdir.showPath(path),
+                    e.msg());
+            }
+        }();
+
+        if (!oid)
+            throw Error("the contents of Git LFS object '%s' don't match its pointer", pointer.oid);
+
+        settings.getCache()->upsert(cacheKey, {{"blob", toHash(*oid).gitRev()}});
+
+        return *oid;
+    }
+
+    /**
+     * Write the contents produced by `read` to `dest` as a blob if they
+     * match `pointer`.
+     */
+    std::optional<git_oid> writeLfsObject(const lfs::Pointer & pointer, std::function<void(Sink &)> read)
+    {
+        auto blobSink = dest.makeRegularFileSink();
+        HashSink hashSink(HashAlgorithm::SHA256);
+        TeeSink sink(hashSink, *blobSink);
+        read(sink);
+
+        auto [hash, size] = hashSink.finish();
+        if (size != pointer.size || hash.to_string(HashFormat::Base16, false) != pointer.oid) {
+            debug("contents of Git LFS object '%s' don't match its pointer", pointer.oid);
+            return std::nullopt;
+        }
+
+        auto oid = hashToOID(std::move(*blobSink).finalize());
+        wrote(size);
+        return oid;
+    }
+
+    /**
+     * Snapshot the directory `dir`, whose counterpart in HEAD (if any)
+     * is `headDir`.
+     */
+    git_oid snapshotDirectory(const CanonPath & dir, const git_tree * headDir)
+    {
+        checkInterrupt();
+
+        if (headDir && !changedDirs.contains(dir)) {
+            auto oid = *git_tree_id(headDir);
+            copyObject(oid);
+            return oid;
+        }
+
+        TreeBuilder builder;
+        if (git_treebuilder_new(Setter(builder), dest, nullptr))
+            throw GitError("creating a tree builder");
+
+        for (auto & [name, _] : workdir.readDirectory(dir)) {
+            auto path = dir / name;
+            auto headEntry = headDir ? git_tree_entry_byname(headDir, name.c_str()) : nullptr;
+
+            git_oid oid;
+            git_filemode_t mode;
+
+            if (submodules.contains(path)) {
+                /* The submodule's contents are provided by a separate
+                   accessor mounted on top of this one, but it must
+                   still appear in its parent directory. */
+                if (headEntry && git_tree_entry_type(headEntry) == GIT_OBJECT_COMMIT) {
+                    oid = *git_tree_entry_id(headEntry);
+                    mode = GIT_FILEMODE_COMMIT;
+                } else {
+                    auto emptyDir = dest.makeDirectorySink();
+                    oid = hashToOID(std::move(*emptyDir).finalize());
+                    mode = GIT_FILEMODE_TREE;
+                }
+            } else {
+                auto st = workdir.maybeLstat(path);
+                if (!st)
+                    /* The file disappeared after we read the directory. */
+                    continue;
+
+                switch (st->type) {
+                case SourceAccessor::tDirectory: {
+                    Tree headSubdir;
+                    if (headEntry && git_tree_entry_type(headEntry) == GIT_OBJECT_TREE
+                        && git_tree_lookup(Setter(headSubdir), repo, git_tree_entry_id(headEntry)))
+                        throw GitError("looking up directory '%s' in Git commit '%s'", path, wd.headRev->gitRev());
+                    oid = snapshotDirectory(path, headSubdir.get());
+                    mode = GIT_FILEMODE_TREE;
+                    break;
+                }
+                case SourceAccessor::tRegular:
+                case SourceAccessor::tSymlink:
+                    if (st->type == SourceAccessor::tRegular && lfsFiles.contains(path))
+                        oid = getLfsFile(path, headEntry, *st);
+                    else if (auto blob = getUnchangedBlob(path, headEntry))
+                        oid = *blob;
+                    else if (st->type == SourceAccessor::tSymlink)
+                        oid = writeSymlink(path);
+                    else
+                        oid = writeFile(path);
+                    if (isUnchanged(path, headEntry))
+                        /* Git doesn't always check permissions and
+                           symlinks (see `core.fileMode` and
+                           `core.symlinks`), so take these from HEAD as
+                           well. */
+                        mode = git_tree_entry_filemode(headEntry);
+                    else if (st->type == SourceAccessor::tSymlink)
+                        mode = GIT_FILEMODE_LINK;
+                    else
+                        mode = st->isExecutable ? GIT_FILEMODE_BLOB_EXECUTABLE : GIT_FILEMODE_BLOB;
+                    break;
+                case SourceAccessor::tChar:
+                case SourceAccessor::tBlock:
+                case SourceAccessor::tSocket:
+                case SourceAccessor::tFifo:
+                case SourceAccessor::tUnknown:
+                    throw Error("file '%s' has an unsupported type", workdir.showPath(path));
+                }
+            }
+
+            if (git_treebuilder_insert(nullptr, builder.get(), name.c_str(), &oid, mode))
+                throw GitError("adding '%s' to a tree", workdir.showPath(path));
+        }
+
+        git_oid oid;
+        if (git_treebuilder_write(&oid, builder.get()))
+            throw GitError("creating a tree object for '%s'", workdir.showPath(dir));
+        return oid;
+    }
+};
+
+/**
+ * An accessor for a snapshot of a working directory, made by
+ * `GitRepo::snapshotWorkdir()`. Apart from reading from the snapshot,
+ * it behaves like the working directory accessor returned by
+ * `GitRepo::getAccessor(const WorkdirInfo &, ...)`.
+ */
+struct WorkdirSnapshotAccessor final : FilteringSourceAccessor
+{
+private:
+    void anchor() override {};
+public:
+    std::set<CanonPath> files;
+
+    /**
+     * The working directory. Only used to show paths and to find them
+     * on disk (e.g. for `nix edit`), never to read them.
+     */
+    ref<SourceAccessor> workdir;
+
+    WorkdirSnapshotAccessor(
+        ref<SourceAccessor> snapshot,
+        std::set<CanonPath> files,
+        ref<SourceAccessor> workdir,
+        MakeNotAllowedError && makeNotAllowedError)
+        : FilteringSourceAccessor(SourcePath(snapshot), std::move(makeNotAllowedError))
+        , files(std::move(files))
+        , workdir(workdir)
+    {
+    }
+
+    bool isAllowed(const CanonPath & path) override
+    {
+        return path.isRoot() || path.isAllowed(files);
+    }
+
+    std::string showPath(const CanonPath & path) override
+    {
+        return displayPrefix + workdir->showPath(path) + displaySuffix;
+    }
+
+    std::optional<std::filesystem::path> getPhysicalPath(const CanonPath & path) override
+    {
+        checkAccess(path);
+        return workdir->getPhysicalPath(path);
+    }
+};
+
+} // namespace
+
+GitRepo::WorkdirSnapshot GitRepoImpl::snapshotWorkdir(
+    const fetchers::Settings & settings,
+    GitRepo & dest_,
+    const WorkdirInfo & wd,
+    const GitAccessorOptions & options,
+    MakeNotAllowedError makeNotAllowedError)
+{
+    auto & dest = dynamic_cast<GitRepoImpl &>(dest_);
+
+    Activity act(
+        *logger, lvlChatty, actUnknown, fmt("copying Git working directory %s to the Git cache", PathFmt(path)));
+
+    auto workdir = makeFSSourceAccessor(path, /*trackLastModified=*/false, FinalSymlink::Follow);
+
+    auto filteredWorkdir = getAccessor(wd, options, makeNotAllowedError);
+    WorkdirSnapshotter snapshotter(*this, dest, settings, wd, *filteredWorkdir, options);
+    auto treeHash = toHash(
+        snapshotter.snapshotDirectory(CanonPath::root, snapshotter.headTree ? snapshotter.headTree->get() : nullptr));
+
+    dest.flush();
+
+    return {
+        .treeHash = treeHash,
+        .accessor = make_ref<WorkdirSnapshotAccessor>(
+            dest.getAccessor(treeHash, {}, workdir->showPath(CanonPath::root)),
+            wd.files,
+            workdir,
+            std::move(makeNotAllowedError)),
+    };
 }
 
 /**
